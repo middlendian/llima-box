@@ -228,8 +228,17 @@ The project uses GitHub Actions for CI/CD:
 - **Pull Requests**: Automatically run tests, linting, and build checks on all PRs
 - **Releases**: Automatically build and publish binaries for all platforms when a version tag is pushed
 
+Release notes are extracted from [CHANGELOG.md](CHANGELOG.md), which follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
+
 To create a new release:
 ```bash
+# 1. Update CHANGELOG.md with version and date
+# 2. Commit the changelog
+git add CHANGELOG.md
+git commit -m "Prepare release v1.0.0"
+git push origin main
+
+# 3. Create and push the tag
 git tag -a v1.0.0 -m "Release v1.0.0"
 git push origin v1.0.0
 ```

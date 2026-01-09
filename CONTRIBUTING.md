@@ -221,6 +221,33 @@ Good examples:
 - `Fix race condition in VM status check`
 - `Update documentation for environment naming`
 
+### Maintaining the Changelog
+
+We follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions. When making changes:
+
+1. **Update CHANGELOG.md** - Add your changes to the `[Unreleased]` section
+2. **Use standard categories**:
+   - **Added** - New features
+   - **Changed** - Changes to existing functionality
+   - **Deprecated** - Soon-to-be removed features
+   - **Removed** - Removed features
+   - **Fixed** - Bug fixes
+   - **Security** - Security fixes
+
+Example:
+```markdown
+## [Unreleased]
+
+### Added
+- New command for listing environments
+- Support for custom VM configurations
+
+### Fixed
+- Race condition in VM status check
+```
+
+When a release is created, maintainers will move the unreleased changes to a new version section.
+
 ### Pull Request Process
 
 1. Update your branch with latest upstream:
@@ -260,28 +287,49 @@ Good examples:
 - [ ] Code is formatted (`make fmt`)
 - [ ] New code has tests
 - [ ] Documentation is updated
+- [ ] CHANGELOG.md is updated (add to [Unreleased] section)
 - [ ] Commit messages are clear
 - [ ] Branch is up to date with main
 
 ## Release Process
 
-Releases are automated via GitHub Actions:
+Releases are automated via GitHub Actions and use [CHANGELOG.md](../CHANGELOG.md) for release notes.
 
-1. Maintainers create and push a version tag:
+### Creating a Release
+
+1. **Update CHANGELOG.md** - Move unreleased changes to a new version section:
+   ```markdown
+   ## [Unreleased]
+
+   (empty or new unreleased changes)
+
+   ## [1.0.0] - 2024-01-09
+
+   ### Added
+   - Your features here
+   ```
+
+2. **Commit the changelog update**:
+   ```bash
+   git add CHANGELOG.md
+   git commit -m "Prepare release v1.0.0"
+   git push origin main
+   ```
+
+3. **Create and push a version tag**:
    ```bash
    git tag -a v1.0.0 -m "Release v1.0.0"
    git push origin v1.0.0
    ```
 
-2. GitHub Actions automatically:
+4. **GitHub Actions automatically**:
    - Runs all tests
    - Builds binaries for all platforms (Linux/macOS, ARM64/AMD64)
    - Creates release archives
    - Generates checksums
-   - Creates GitHub release with notes
+   - Extracts release notes from CHANGELOG.md
+   - Creates GitHub release with notes and binaries
    - Publishes to Go proxy
-
-3. Release notes are auto-generated from commits since the last tag
 
 ### Version Numbering
 

@@ -69,23 +69,31 @@ jobs:
           done
           ls -lh
 
-      - name: Generate release notes
+      - name: Extract changelog and generate release notes
         id: release_notes
         run: |
-          # Extract changelog for this version if it exists
           VERSION=${{ steps.version.outputs.VERSION }}
-          echo "## What's Changed" > release_notes.md
-          echo "" >> release_notes.md
 
-          # Get commits since last tag
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [ -n "$PREVIOUS_TAG" ]; then
-            echo "Changes since $PREVIOUS_TAG:" >> release_notes.md
-            git log --pretty=format:"- %s (%h)" $PREVIOUS_TAG..HEAD >> release_notes.md
-          else
-            echo "Initial release" >> release_notes.md
+          # Extract the changelog section for this version from CHANGELOG.md
+          # Look for the version header and extract until the next version header
+          awk -v ver="$VERSION" '
+            /^## \[/ {
+              if (found) exit
+              if ($0 ~ "## \\[" ver "\\]") {
+                found=1
+                next
+              }
+            }
+            found { print }
+          ' CHANGELOG.md > release_notes.md
+
+          # If no changelog entry found, use a default message
+          if [ ! -s release_notes.md ]; then
+            echo "See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details." > release_notes.md
+            echo "" >> release_notes.md
           fi
 
+          # Append installation instructions
           echo "" >> release_notes.md
           echo "## Installation" >> release_notes.md
           echo "" >> release_notes.md
@@ -131,6 +139,7 @@ jobs:
           echo "sha256sum -c checksums.txt" >> release_notes.md
           echo '```' >> release_notes.md
 
+          echo "Generated release notes:"
           cat release_notes.md
 
       - name: Create GitHub Release

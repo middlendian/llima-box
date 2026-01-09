@@ -102,7 +102,7 @@ lint:
 
 # Run all checks (formatting, vetting, linting, tests)
 # Build first to apply automatic fixes (fmt, tidy)
-check: build vet lint deps-verify fmt-verify test
+check: build vet lint deps-verify fmt-check test
 
 # Update dependencies
 deps:

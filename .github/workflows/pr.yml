@@ -15,6 +15,43 @@ permissions:
   pull-requests: read
 
 jobs:
+  # Check if CHANGELOG.md was updated
+  changelog:
+    name: Check CHANGELOG.md
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if CHANGELOG.md was updated
+        run: |
+          # Get the list of changed files
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+
+          # Check if CHANGELOG.md is in the list
+          if ! echo "$CHANGED_FILES" | grep -q "^CHANGELOG.md$"; then
+            echo "::warning::CHANGELOG.md was not updated. Please add your changes to the [Unreleased] section."
+            echo ""
+            echo "If this is a documentation-only change or doesn't require a changelog entry,"
+            echo "you can ignore this warning. Otherwise, please update CHANGELOG.md following"
+            echo "the Keep a Changelog format: https://keepachangelog.com/en/1.1.0/"
+            echo ""
+            echo "Example:"
+            echo "## [Unreleased]"
+            echo ""
+            echo "### Added"
+            echo "- Your new feature"
+            echo ""
+            echo "### Fixed"
+            echo "- Your bug fix"
+          else
+            echo "✓ CHANGELOG.md was updated"
+          fi
+
   # Format check
   format:
     name: Check Formatting

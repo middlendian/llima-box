@@ -83,22 +83,20 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
-      - name: Apply automatic fixes (fmt, tidy)
-        run: |
-          make fmt
-          go mod tidy
-        continue-on-error: true
+      - name: Run make check
+        run: make check
 
-      - name: Check for uncommitted changes after auto-fixes
+      - name: Check for uncommitted changes
         if: matrix.os == 'ubuntu-latest'
         id: auto_fixes
         run: |
           if [[ -n $(git status --porcelain) ]]; then
             echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "Changes detected after auto-fixes:"
+            echo "Changes detected after make check:"
             git status --porcelain
           else
             echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
           fi
 
       - name: Commit and push automatic fixes
@@ -114,7 +112,7 @@ jobs:
           - Code formatting via gofmt
           - Module dependency updates via go mod tidy
 
-          These changes were applied before running validation checks."
+          These changes were applied by running 'make check'."
           git push
 
       - name: Comment on PR about automatic fixes
@@ -134,22 +132,14 @@ jobs:
               - ✨ Code formatting (via \`gofmt\`)
               - 📦 Module dependencies (via \`go mod tidy\`)
 
-              The changes have been pushed to your branch. The workflow will now re-run validation checks.
+              The changes have been pushed to your branch. Please pull the latest changes:
 
-              To pull these changes locally:
               \`\`\`bash
               git pull origin ${{ github.head_ref }}
               \`\`\`
 
               These fixes ensure code consistency and are applied automatically to reduce manual toil.`
             });
-
-      - name: Run validation checks
-        run: |
-          # Run validation without auto-fixes (already applied above)
-          make vet
-          make lint
-          make test
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest'

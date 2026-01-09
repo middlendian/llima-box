@@ -30,18 +30,18 @@ This document outlines the remaining work to complete llima-box v1.
 
 ## Remaining Work for v1
 
-### Phase 4: Environment Manager (4-5 hours)
+### Phase 4: Environment Manager ✅ COMPLETE
 
-**Location**: `pkg/env/manager.go`, `pkg/env/namespace.go`
+**Location**: `pkg/env/manager.go`
 
 **Tasks**:
-- [ ] Implement user account creation via SSH
-- [ ] Create persistent namespace setup
-- [ ] Implement namespace entry (nsenter)
-- [ ] Add environment listing functionality
-- [ ] Add environment deletion with cleanup
-- [ ] Handle namespace file persistence
-- [ ] Error recovery for corrupted namespaces
+- [x] Implement user account creation via SSH
+- [x] Create persistent namespace setup
+- [x] Implement namespace entry (nsenter)
+- [x] Add environment listing functionality
+- [x] Add environment deletion with cleanup
+- [x] Handle namespace file persistence
+- [x] Error recovery for corrupted namespaces
 
 **Key Operations**:
 ```go

@@ -104,12 +104,12 @@ sudo mv bin/llima-box /usr/local/bin/
 - ✅ Multi-architecture support (x86_64 + ARM64)
 - ✅ Environment naming and sanitization (with comprehensive tests)
 - ✅ SSH client for VM communication (with retry logic and agent forwarding)
+- ✅ Environment manager (namespace operations, user management)
 
 ### In Progress
-- 🚧 Environment manager (namespace operations)
+- 🚧 CLI commands (shell, list, delete, delete-all)
 
 ### Planned
-- ⏳ CLI commands (shell, list, delete, delete-all)
 - ⏳ Testing and validation
 - ⏳ End-to-end integration
 

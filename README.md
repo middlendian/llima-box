@@ -75,9 +75,9 @@ go install github.com/yourusername/llima-box@latest
 - ✅ Lima integration validated (POC)
 - ✅ VM lifecycle management (core implementation)
 - ✅ Multi-architecture support (x86_64 + ARM64)
+- ✅ Environment naming and sanitization (with comprehensive tests)
 
 ### In Progress
-- 🚧 Environment naming and sanitization
 - 🚧 SSH client for VM communication
 - 🚧 Environment manager (namespace operations)
 

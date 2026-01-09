@@ -19,6 +19,9 @@ GOMOD=$(GOCMD) mod
 GOFMT=gofmt
 GOLINT=golangci-lint
 
+# Go proxy configuration with fallback to direct downloads
+export GOPROXY=https://proxy.golang.org,direct
+
 # Build targets
 .PHONY: help check build all clean test coverage lint fmt fmt-check vet tidy install deps deps-verify
 

@@ -36,7 +36,7 @@ llima-box/
 
 ## Implementation Phases
 
-### Phase 1: Project Setup ✅
+### Phase 1: Project Setup ✅ COMPLETE
 
 **Goal**: Initialize Go project with dependencies.
 
@@ -48,7 +48,7 @@ llima-box/
 
 **Duration**: ~30 minutes
 
-### Phase 2: VM Management
+### Phase 2: VM Management ✅ COMPLETE
 
 **Goal**: Implement VM lifecycle management.
 
@@ -91,9 +91,11 @@ func LoadConfig(path string) (*limayaml.LimaYAML, error)
 - Unit: Configuration parsing
 - Manual: VM creation, start, stop
 
+**Status**: ✅ Complete - `pkg/vm/manager.go`, `pkg/vm/config.go`
+
 **Duration**: ~2-3 hours
 
-### Phase 3: Environment Naming
+### Phase 3: Environment Naming ✅ COMPLETE
 
 **Goal**: Implement path-to-environment-name mapping.
 
@@ -126,9 +128,11 @@ func IsValidName(name string) bool
 - Unit tests for various path formats
 - Edge cases: special characters, unicode, long names
 
+**Status**: ✅ Complete - `pkg/env/naming.go`, `pkg/env/naming_test.go`
+
 **Duration**: ~1 hour
 
-### Phase 4: SSH Client
+### Phase 4: SSH Client ✅ COMPLETE
 
 **Goal**: Establish SSH connections to Lima VM.
 
@@ -155,10 +159,19 @@ func (c *Client) Close() error
 
 **Testing:**
 - Manual: Connect to VM and run commands
+- Integration tests: See `pkg/ssh/client_test.go`
 
-**Duration**: ~1-2 hours
+**Status**: ✅ Complete - `pkg/ssh/client.go`, `pkg/ssh/retry.go`, `pkg/ssh/client_test.go`, `pkg/ssh/doc.go`
 
-### Phase 5: Environment Management
+**Implementation Notes:**
+- Added retry logic with exponential backoff
+- Implemented both interactive and non-interactive execution
+- Added context support for cancellable commands
+- Included SSH agent forwarding for Git operations
+
+**Duration**: ~2-3 hours
+
+### Phase 5: Environment Management ⏳ NEXT
 
 **Goal**: Create, manage, and delete isolated environments.
 
@@ -368,6 +381,10 @@ func deleteAllCommand(cmd *cobra.Command, args []string) error {
 ## Total Estimated Time
 
 **15-20 hours of development**
+
+**Progress:**
+- ✅ Phases 1-4 Complete: ~5-6 hours
+- ⏳ Remaining (Phases 5-8): ~13-17 hours
 
 This assumes familiarity with Go and no major roadblocks with Lima integration.
 

@@ -50,6 +50,7 @@ llima-box delete-all
 - [Testing Plan](docs/TESTING.md) - Manual and automated testing approach
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Step-by-step implementation phases
 - [POC Status](docs/POC_STATUS.md) - Lima integration proof-of-concept validation
+- [Next Steps](docs/NEXT_STEPS.md) - Remaining work for v1 (18-23 hours estimated)
 
 ## Prerequisites
 

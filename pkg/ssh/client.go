@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/lima-vm/lima/pkg/sshutil"
 	"github.com/lima-vm/lima/pkg/store"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -52,17 +51,22 @@ func (c *Client) Connect() error {
 		return nil // Already connected
 	}
 
-	// Get SSH configuration from Lima
-	sshConfig, err := sshutil.SSHConfig(c.instance.Dir, false)
-	if err != nil {
-		return fmt.Errorf("failed to get SSH config: %w", err)
+	// Get SSH user from instance config
+	user := "lima" // Default user
+	if c.instance.Config != nil && c.instance.Config.User.Name != nil {
+		user = *c.instance.Config.User.Name
 	}
 
-	// Convert Lima's SSH config to crypto/ssh config
-	authMethods := []ssh.AuthMethod{}
+	// Get SSH key paths - Lima stores keys in $LIMA_HOME/_config/
+	limaDir := store.Directory()
+	keyPaths := []string{
+		filepath.Join(limaDir, "_config", "user"),
+		filepath.Join(c.instance.Dir, "ssh_key"),
+	}
 
-	// Add SSH keys
-	for _, keyPath := range sshConfig.IdentityFile {
+	// Load SSH keys
+	authMethods := []ssh.AuthMethod{}
+	for _, keyPath := range keyPaths {
 		key, err := os.ReadFile(keyPath)
 		if err != nil {
 			continue // Skip invalid keys
@@ -77,22 +81,31 @@ func (c *Client) Connect() error {
 	}
 
 	if len(authMethods) == 0 {
-		return fmt.Errorf("no valid SSH keys found")
+		return fmt.Errorf("no valid SSH keys found in %v", keyPaths)
 	}
 
 	// Create SSH client config
 	c.sshConfig = &ssh.ClientConfig{
-		User:            sshConfig.User(),
+		User:            user,
 		Auth:            authMethods,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // Lima VMs are trusted
 		Timeout:         10 * time.Second,
 	}
 
-	// Connect to SSH
-	addr := net.JoinHostPort(sshConfig.Hostname(), fmt.Sprintf("%d", sshConfig.Port()))
+	// Connect to SSH using instance hostname and port
+	host := c.instance.Hostname
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := c.instance.SSHLocalPort
+	if port == 0 {
+		port = 22
+	}
+
+	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 	client, err := ssh.Dial("tcp", addr, c.sshConfig)
 	if err != nil {
-		return fmt.Errorf("failed to dial SSH: %w", err)
+		return fmt.Errorf("failed to dial SSH at %s: %w", addr, err)
 	}
 
 	c.client = client

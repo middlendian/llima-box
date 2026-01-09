@@ -30,7 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Test target now generates coverage report for CI
 - Build target now automatically applies formatting and module tidying
 - Check target depends on build to ensure fixes are applied before validation
-- CI automatically commits and pushes formatting/module fixes with PR notification
+- CI automatically commits and pushes formatting/module fixes with PR notification tagging commit authors
+- CI now only uses ubuntu-latest, relying on Go cross-compilation for multi-platform builds
 
 ### Fixed
 - Code formatting in pkg/env/doc.go and pkg/env/naming_test.go

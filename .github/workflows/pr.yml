@@ -55,10 +55,7 @@ jobs:
   # Run all checks using make check
   check:
     name: Run make check
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     permissions:
       contents: write
       pull-requests: write
@@ -87,7 +84,6 @@ jobs:
         run: make check
 
       - name: Check for uncommitted changes
-        if: matrix.os == 'ubuntu-latest'
         id: auto_fixes
         run: |
           if [[ -n $(git status --porcelain) ]]; then
@@ -100,7 +96,7 @@ jobs:
           fi
 
       - name: Commit and push automatic fixes
-        if: matrix.os == 'ubuntu-latest' && steps.auto_fixes.outputs.has_changes == 'true'
+        if: steps.auto_fixes.outputs.has_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -116,18 +112,43 @@ jobs:
           git push
 
       - name: Comment on PR about automatic fixes
-        if: matrix.os == 'ubuntu-latest' && steps.auto_fixes.outputs.has_changes == 'true'
+        if: steps.auto_fixes.outputs.has_changes == 'true'
         uses: actions/github-script@v7
         with:
           script: |
             const issue_number = context.issue.number;
+
+            // Get all commits in the PR to find commit authors
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: issue_number,
+            });
+
+            // Extract unique commit authors (excluding bots)
+            const authorLogins = new Set();
+            commits.data.forEach(commit => {
+              if (commit.author && commit.author.login && !commit.author.login.includes('[bot]')) {
+                authorLogins.add(commit.author.login);
+              }
+              // Also check committer if different from author
+              if (commit.committer && commit.committer.login &&
+                  !commit.committer.login.includes('[bot]') &&
+                  commit.committer.login !== commit.author?.login) {
+                authorLogins.add(commit.committer.login);
+              }
+            });
+
+            // Build mentions string
+            const mentions = Array.from(authorLogins).map(login => `@${login}`).join(' ');
+
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: issue_number,
               body: `👷 **Automatic fixes applied**
 
-              @${{ github.event.pull_request.user.login }} The CI workflow has automatically fixed some issues in your PR:
+              ${mentions} The CI workflow has automatically fixed some issues in your PR:
 
               - ✨ Code formatting (via \`gofmt\`)
               - 📦 Module dependencies (via \`go mod tidy\`)
@@ -142,7 +163,6 @@ jobs:
             });
 
       - name: Upload coverage to Codecov
-        if: matrix.os == 'ubuntu-latest'
         uses: codecov/codecov-action@v4
         with:
           files: ./coverage.out

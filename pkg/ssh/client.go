@@ -67,7 +67,7 @@ func (c *Client) Connect() error {
 	// Load SSH keys
 	authMethods := []ssh.AuthMethod{}
 	for _, keyPath := range keyPaths {
-		key, err := os.ReadFile(keyPath)
+		key, err := os.ReadFile(keyPath) // #nosec G304 -- SSH key paths are controlled by Lima
 		if err != nil {
 			continue // Skip invalid keys
 		}
@@ -88,7 +88,7 @@ func (c *Client) Connect() error {
 	c.sshConfig = &ssh.ClientConfig{
 		User:            user,
 		Auth:            authMethods,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // Lima VMs are trusted
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // #nosec G106 -- Lima VMs are trusted local VMs
 		Timeout:         10 * time.Second,
 	}
 
@@ -126,7 +126,7 @@ func (c *Client) Exec(cmd string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// Run command and capture output
 	output, err := session.CombinedOutput(cmd)
@@ -150,7 +150,7 @@ func (c *Client) ExecContext(ctx context.Context, cmd string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// Create channel for command completion
 	done := make(chan error, 1)
@@ -164,7 +164,7 @@ func (c *Client) ExecContext(ctx context.Context, cmd string) (string, error) {
 	// Wait for command or context cancellation
 	select {
 	case <-ctx.Done():
-		session.Signal(ssh.SIGKILL)
+		_ = session.Signal(ssh.SIGKILL)
 		return "", ctx.Err()
 	case err := <-done:
 		if err != nil {
@@ -188,7 +188,7 @@ func (c *Client) ExecInteractive(cmd string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// Setup SSH agent forwarding if available
 	if err := setupAgentForwarding(session); err != nil {
@@ -209,7 +209,7 @@ func (c *Client) ExecInteractive(cmd string) error {
 		if err != nil {
 			return fmt.Errorf("failed to make terminal raw: %w", err)
 		}
-		defer term.Restore(fd, state)
+		defer func() { _ = term.Restore(fd, state) }()
 
 		width, height, err := term.GetSize(fd)
 		if err != nil {
@@ -255,25 +255,25 @@ func (c *Client) ExecPipe(cmd string) (stdin io.WriteCloser, stdout, stderr io.R
 	// Get pipes
 	stdin, err = session.StdinPipe()
 	if err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 
 	stdout, err = session.StdoutPipe()
 	if err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
 	stderr, err = session.StderrPipe()
 	if err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 
 	// Start command
 	if err := session.Start(cmd); err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
@@ -320,15 +320,19 @@ func setupAgentForwarding(session *ssh.Session) error {
 	}
 
 	// Request agent forwarding
-	if err := session.RequestAgentForwarding(); err != nil {
+	ok, err := session.SendRequest("auth-agent-req@openssh.com", true, nil)
+	if err != nil {
 		return fmt.Errorf("failed to request agent forwarding: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("agent forwarding request denied")
 	}
 
 	return nil
 }
 
 // handleTerminalResize monitors terminal size changes and updates the remote PTY
-func handleTerminalResize(session *ssh.Session, fd int) {
+func handleTerminalResize(_ *ssh.Session, _ int) {
 	// This is a simplified version - a full implementation would use SIGWINCH
 	// For now, we'll just set the initial size
 	// A production version would listen for terminal resize signals

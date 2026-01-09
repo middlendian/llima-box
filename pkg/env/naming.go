@@ -1,7 +1,7 @@
 package env
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -60,14 +60,13 @@ func sanitizeBasename(basename string) string {
 	// Only keep ASCII letters, digits, hyphens, and underscores
 	var result strings.Builder
 	for _, r := range s {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
+		switch {
+		case (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9'):
 			result.WriteRune(r)
-		} else if r == '-' || r == '_' {
+		case r == '-' || r == '_':
 			result.WriteRune(r)
-		} else if unicode.IsLetter(r) || unicode.IsDigit(r) {
-			// Non-ASCII letter/digit: replace with hyphen
-			result.WriteRune('-')
-		} else {
+		default:
+			// Non-ASCII letters/digits and other characters: replace with hyphen
 			result.WriteRune('-')
 		}
 	}
@@ -105,7 +104,7 @@ func sanitizeBasename(basename string) string {
 
 // pathHash generates a 4-character hash from a path for uniqueness.
 func pathHash(path string) string {
-	h := sha1.New()
+	h := sha256.New()
 	h.Write([]byte(path))
 	sum := h.Sum(nil)
 	// Take first 2 bytes (4 hex characters)

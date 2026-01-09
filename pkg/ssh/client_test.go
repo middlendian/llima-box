@@ -57,7 +57,7 @@ func TestClientConnection(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewClient() failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if err := client.Connect(); err != nil {
 		t.Fatalf("Connect() failed: %v", err)
@@ -87,7 +87,7 @@ func TestExec(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewClient() failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	tests := []struct {
 		name    string
@@ -148,7 +148,7 @@ func TestExecContext(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewClient() failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	t.Run("successful command", func(t *testing.T) {
 		ctx := context.Background()
@@ -189,7 +189,7 @@ func TestConnectWithRetry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewClient() failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	config := RetryConfig{
 		MaxAttempts:  3,
@@ -244,7 +244,7 @@ func TestGetUser(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewClient() failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if err := client.Connect(); err != nil {
 		t.Fatalf("Connect() failed: %v", err)

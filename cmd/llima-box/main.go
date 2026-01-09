@@ -1,3 +1,5 @@
+// Package main provides the llima-box CLI tool for managing secure, isolated
+// environments for LLM agents using Lima VMs.
 package main
 
 import (
@@ -30,7 +32,7 @@ var testNamingCmd = &cobra.Command{
 	Run:   runTestNaming,
 }
 
-func runTestVM(cmd *cobra.Command, args []string) {
+func runTestVM(_ *cobra.Command, _ []string) {
 	fmt.Println("llima-box VM Management Test")
 	fmt.Println("=============================")
 
@@ -71,7 +73,7 @@ func runTestVM(cmd *cobra.Command, args []string) {
 	}
 }
 
-func runTestNaming(cmd *cobra.Command, args []string) {
+func runTestNaming(_ *cobra.Command, args []string) {
 	var path string
 	if len(args) == 0 {
 		// Use current directory

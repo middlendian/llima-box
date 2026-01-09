@@ -69,7 +69,7 @@ func (c *Client) ExecWithRetry(cmd string, config RetryConfig) (string, error) {
 
 		// If connection is broken, try to reconnect
 		if !c.IsConnected() {
-			c.Close()
+			_ = c.Close()
 			if err := c.Connect(); err != nil {
 				lastErr = fmt.Errorf("reconnection failed: %w", err)
 			}

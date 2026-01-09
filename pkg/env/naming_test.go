@@ -217,7 +217,7 @@ func TestPathHash(t *testing.T) {
 			}
 			// Check it's all hex
 			for _, r := range hash {
-				if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')) {
+				if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
 					t.Errorf("pathHash() = %v, contains non-hex character", hash)
 				}
 			}

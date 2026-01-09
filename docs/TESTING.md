@@ -2,9 +2,65 @@
 
 This document describes the testing strategy for llima-box.
 
+## Testing Progress
+
+Track which tests can be performed at each development phase:
+
+### Phase 1-2: VM Management ✅
+- [x] Unit tests for VM lifecycle
+- [x] Manual: VM creation, start, stop
+- [x] Manual: VM auto-start on command
+- **How to test**: See "VM Management Tests" section below
+
+### Phase 3: Environment Naming ✅
+- [x] Unit tests for path sanitization
+- [x] Unit tests for environment name generation
+- [x] Edge cases: special characters, unicode, long names
+- **How to test**: `go test ./pkg/env/... -v`
+
+### Phase 4: SSH Client ✅
+- [x] Integration tests for SSH connection
+- [x] Command execution (interactive and non-interactive)
+- [x] Retry logic testing
+- [x] SSH agent forwarding verification
+- **How to test**: See "SSH Client Tests" section below
+
+### Phase 5: Environment Management ⏳
+- [ ] User account creation
+- [ ] Namespace creation and persistence
+- [ ] Namespace entry with nsenter
+- [ ] Environment listing
+- [ ] Environment deletion
+- **How to test**: Manual testing required (Phase 5 not yet complete)
+
+### Phase 6: CLI Commands ⏳
+- [ ] All integration test scenarios (1-14)
+- **How to test**: See "Integration Tests (Manual)" section below
+
+### Phase 7: End-to-End Testing ⏳
+- [ ] Complete test suite (all 14 scenarios)
+- [ ] Performance benchmarks
+- [ ] Error handling validation
+
 ## Unit Tests
 
 Unit tests cover isolated logic that doesn't require Lima VMs.
+
+### Running Unit Tests
+
+```bash
+# Run all unit tests
+go test ./...
+
+# Run tests for specific package
+go test ./pkg/env/... -v
+
+# Run with coverage
+go test ./... -cover
+
+# Run only short tests (skip integration tests)
+go test ./... -short
+```
 
 ### Test Coverage
 
@@ -37,6 +93,81 @@ Unit tests cover isolated logic that doesn't require Lima VMs.
 - Clear, actionable error messages
 - Include relevant context
 - Suggest fixes where possible
+
+## Component-Specific Testing
+
+### VM Management Tests
+
+**Manual testing of VM lifecycle:**
+
+```bash
+# Test VM creation
+cd /path/to/llima-box
+go run cmd/llima-box/main.go version  # Or any command that triggers VM check
+
+# Check VM status
+limactl list
+
+# Test VM start/stop
+limactl stop agents
+# Run command again - should auto-start VM
+
+# Test VM deletion and recreation
+limactl delete agents
+# Run command again - should create new VM
+```
+
+### SSH Client Tests
+
+**Integration tests (requires running VM):**
+
+```bash
+# First, ensure Lima VM is running
+limactl start agents  # Or let llima-box create it
+
+# Run SSH client integration tests
+cd /path/to/llima-box
+RUN_INTEGRATION_TESTS=true go test ./pkg/ssh/... -v
+
+# Test SSH agent forwarding (requires SSH_AUTH_SOCK)
+echo $SSH_AUTH_SOCK  # Should be set
+RUN_INTEGRATION_TESTS=true go test ./pkg/ssh/... -v -run TestClientConnection
+
+# Test command execution
+RUN_INTEGRATION_TESTS=true go test ./pkg/ssh/... -v -run TestExec
+
+# Test retry logic
+RUN_INTEGRATION_TESTS=true go test ./pkg/ssh/... -v -run TestConnectWithRetry
+```
+
+**Manual SSH testing:**
+
+```bash
+# Test interactive SSH connection
+lima agents bash
+# Should connect successfully
+
+# Test SSH agent forwarding
+lima agents bash
+ssh-add -l  # Should show your SSH keys
+
+# Test command execution
+lima agents uname -a
+```
+
+### Environment Naming Tests
+
+**Unit tests:**
+
+```bash
+# Run environment naming tests
+go test ./pkg/env/... -v
+
+# Test specific scenarios
+go test ./pkg/env/... -v -run TestGenerateName
+go test ./pkg/env/... -v -run TestSanitizeBasename
+go test ./pkg/env/... -v -run TestPathHash
+```
 
 ## Integration Tests (Manual)
 

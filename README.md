@@ -76,9 +76,9 @@ go install github.com/yourusername/llima-box@latest
 - ✅ VM lifecycle management (core implementation)
 - ✅ Multi-architecture support (x86_64 + ARM64)
 - ✅ Environment naming and sanitization (with comprehensive tests)
+- ✅ SSH client for VM communication (with retry logic and agent forwarding)
 
 ### In Progress
-- 🚧 SSH client for VM communication
 - 🚧 Environment manager (namespace operations)
 
 ### Planned

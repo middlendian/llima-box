@@ -12,45 +12,23 @@ This document outlines the remaining work to complete llima-box v1.
 - Ubuntu 24.04 LTS configuration
 - Documentation framework in place
 
+✅ **Phase 2: Environment Naming Complete**
+- Path-to-environment-name generation implemented
+- Basename sanitization for Linux usernames
+- 4-character hash generation for uniqueness
+- Comprehensive validation and testing
+- Location: `pkg/env/naming.go`, `pkg/env/naming_test.go`
+
+✅ **Phase 3: SSH Client Complete**
+- SSH client wrapper using Lima's sshutil
+- Connection management with auto-connect
+- Non-interactive command execution (Exec, ExecContext)
+- Interactive shell support with PTY
+- Retry logic with exponential backoff
+- SSH agent forwarding for Git operations
+- Location: `pkg/ssh/client.go`, `pkg/ssh/retry.go`, `pkg/ssh/client_test.go`
+
 ## Remaining Work for v1
-
-### Phase 2: Environment Naming (2-3 hours)
-
-**Location**: `pkg/env/naming.go`
-
-**Tasks**:
-- [ ] Implement path-to-environment-name generation
-- [ ] Sanitize project path basenames for Linux usernames
-- [ ] Generate 4-character hash from full path for uniqueness
-- [ ] Validate environment names meet Linux username requirements
-- [ ] Write unit tests for various path formats
-
-**Example Output**:
-```go
-"/Users/alice/my-project"     → "my-project-a1b2"
-"/Users/alice/My Cool App"    → "my-cool-app-c3d4"
-"/Users/bob/my-project"       → "my-project-i9j0"  // Different hash
-```
-
-### Phase 3: SSH Client (2-3 hours)
-
-**Location**: `pkg/ssh/client.go`
-
-**Tasks**:
-- [ ] Create SSH client wrapper using Lima's sshutil
-- [ ] Implement connection to running VM
-- [ ] Add command execution (non-interactive)
-- [ ] Add interactive shell support
-- [ ] Handle SSH connection failures gracefully
-- [ ] Support SSH agent forwarding
-
-**Key Functions**:
-```go
-func NewClient(instanceName string) (*Client, error)
-func (c *Client) Connect() error
-func (c *Client) Exec(cmd string) (string, error)
-func (c *Client) ExecInteractive(cmd string) error
-```
 
 ### Phase 4: Environment Manager (4-5 hours)
 
@@ -134,15 +112,16 @@ func (m *Manager) EnterNamespace(env *Environment, cmd []string) error
 
 ## Estimated Timeline
 
-**Total Remaining**: 18-23 hours of development
+**Total Completed**: ~5-6 hours (Phases 1-3)
+**Total Remaining**: ~13-17 hours of development
 
 **Breakdown**:
-- Environment Naming: 2-3 hours
-- SSH Client: 2-3 hours
-- Environment Manager: 4-5 hours
-- CLI Commands: 4-5 hours
-- Polish: 2-3 hours
-- Testing: 3-4 hours
+- ✅ Environment Naming: 2-3 hours (DONE)
+- ✅ SSH Client: 2-3 hours (DONE)
+- ⏳ Environment Manager: 4-5 hours (NEXT)
+- ⏳ CLI Commands: 4-5 hours
+- ⏳ Polish: 2-3 hours
+- ⏳ Testing: 3-4 hours
 
 ## Success Criteria
 
@@ -176,10 +155,10 @@ Ideas for future versions (not blocking v1):
 
 To continue development:
 
-1. **Next Phase**: Start with Phase 2 (Environment Naming)
+1. **Next Phase**: Phase 4 (Environment Manager) - namespace operations and user management
 2. **Reference**: See `docs/IMPLEMENTATION_PLAN.md` for detailed specs
-3. **Testing**: Run manual tests as features are completed
-4. **Documentation**: Update README.md as features are implemented
+3. **Testing**: See `docs/TESTING.md` for manual testing procedures
+4. **Documentation**: Update README.md and docs as features are implemented
 
 ## Questions?
 

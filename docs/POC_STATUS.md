@@ -1,8 +1,12 @@
 # Proof of Concept Status
 
-## Lima Integration Validation
+> **Update (January 2026)**: The POC phase is complete and validated. We have now progressed beyond the POC to implement production components. See [NEXT_STEPS.md](NEXT_STEPS.md) for current progress.
+
+## Lima Integration Validation ✅
 
 We've successfully created a proof-of-concept VM manager that uses Lima's Go packages directly, following the same patterns used by `limactl`.
+
+**POC Status**: Complete and validated. The approach works as designed.
 
 ## What We Built
 
@@ -106,30 +110,35 @@ We can successfully use Lima's internal packages just like `limactl` does:
    - Configuration includes all namespace scripts
    - Multi-architecture support via multiple images
 
-## Next Steps
+## Implementation Progress
 
-With Lima integration validated, we can proceed with:
+With Lima integration validated, we have completed:
 
-1. **Environment Naming** (`pkg/env/naming.go`)
+1. ✅ **Environment Naming** (`pkg/env/naming.go`, `pkg/env/naming_test.go`)
    - Path sanitization
    - Hash generation
    - Username validation
+   - Comprehensive unit tests
 
-2. **SSH Client** (`pkg/ssh/client.go`)
+2. ✅ **SSH Client** (`pkg/ssh/client.go`, `pkg/ssh/retry.go`)
    - Connect to running VM
-   - Execute commands via SSH
-   - Interactive shell support
+   - Execute commands via SSH (interactive and non-interactive)
+   - Interactive shell support with PTY
+   - Retry logic with exponential backoff
+   - SSH agent forwarding
 
-3. **Environment Manager** (`pkg/env/manager.go`)
+3. ⏳ **Environment Manager** (`pkg/env/manager.go`) - NEXT
    - Create Linux user accounts
    - Setup persistent namespaces
    - Manage environment lifecycle
 
-4. **CLI Commands** (`internal/cli/`)
+4. ⏳ **CLI Commands** (`internal/cli/`)
    - `shell` - Launch isolated shell
    - `list` - List environments
    - `delete` - Delete environment
    - `delete-all` - Delete all environments
+
+For detailed progress, see [NEXT_STEPS.md](NEXT_STEPS.md).
 
 ## Building the POC
 

@@ -1,0 +1,155 @@
+images:
+# x86_64 / AMD64 architecture
+- location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
+  arch: "x86_64"
+# ARM64 / aarch64 architecture (Apple Silicon)
+- location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img"
+  arch: "aarch64"
+
+cpus: 4
+memory: "8GiB"
+disk: "100GiB"
+
+mounts:
+- location: "~"
+  writable: true
+- location: "/tmp/lima"
+  writable: true
+
+ssh:
+  localPort: 60022
+  loadDotSSHPubKeys: true
+  forwardAgent: true
+
+provision:
+# Install required packages
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    export DEBIAN_FRONTEND=noninteractive
+
+    apt-get update
+    apt-get install -y zsh build-essential curl git
+
+    # Install mise-en-place
+    curl https://mise.run | sh
+
+    chsh -s /bin/zsh
+
+# Create namespace setup script
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+
+    cat > /usr/local/bin/create-namespace.sh << 'SCRIPT_EOF'
+    #!/bin/bash
+    set -e
+
+    ENV_NAME="$1"
+    PROJECT_PATH="$2"
+    NS_FILE="/home/$ENV_NAME/namespace.mnt"
+
+    if [ -z "$ENV_NAME" ] || [ -z "$PROJECT_PATH" ]; then
+        echo "Usage: $0 <env_name> <project_path>"
+        exit 1
+    fi
+
+    echo "Creating persistent namespace for $ENV_NAME at $PROJECT_PATH"
+
+    unshare --mount="$NS_FILE" --propagation private bash -c '
+        mount --make-rprivate /
+        mkdir -p /tmp/isolated-root
+
+        # Mount system directories (read-only)
+        for dir in bin sbin lib lib64 usr etc; do
+            if [ -d "/$dir" ]; then
+                mkdir -p "/tmp/isolated-root/$dir"
+                mount --bind "/$dir" "/tmp/isolated-root/$dir"
+                mount -o remount,bind,ro "/tmp/isolated-root/$dir"
+            fi
+        done
+
+        # Mount runtime directories
+        mkdir -p /tmp/isolated-root/{tmp,var,proc,sys,dev}
+        mount --bind /tmp /tmp/isolated-root/tmp
+        mount --bind /var /tmp/isolated-root/var
+        mount --bind /proc /tmp/isolated-root/proc
+        mount --bind /sys /tmp/isolated-root/sys
+        mount --bind /dev /tmp/isolated-root/dev
+
+        # Create project path structure
+        project_path="'"$PROJECT_PATH"'"
+        parent_path="$(dirname "$project_path")"
+        mkdir -p "/tmp/isolated-root$parent_path"
+        mkdir -p "/tmp/isolated-root$project_path"
+        mount --bind "$project_path" "/tmp/isolated-root$project_path"
+
+        # Mount user home
+        mkdir -p "/tmp/isolated-root/home/'"$ENV_NAME"'"
+        mount --bind "/home/'"$ENV_NAME"'" "/tmp/isolated-root/home/'"$ENV_NAME"'"
+
+        chroot /tmp/isolated-root sleep infinity
+    ' &
+
+    sleep 2
+    echo "Namespace created successfully"
+    SCRIPT_EOF
+
+    chmod +x /usr/local/bin/create-namespace.sh
+
+# Create sandbox entry script
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+
+    cat > /usr/local/bin/sandbox.sh << 'SCRIPT_EOF'
+    #!/bin/bash
+    set -e
+
+    ENV_NAME="$1"
+    PROJECT_PATH="$2"
+    shift 2
+
+    NS_FILE="/home/$ENV_NAME/namespace.mnt"
+
+    if [ -z "$ENV_NAME" ] || [ -z "$PROJECT_PATH" ]; then
+        echo "Usage: $0 <env_name> <project_path> [command...]"
+        exit 1
+    fi
+
+    if [ $# -eq 0 ]; then
+        set -- zsh
+    fi
+
+    if [ ! -f "$NS_FILE" ]; then
+        echo "Error: Namespace file $NS_FILE not found"
+        exit 1
+    fi
+
+    nsenter --mount="$NS_FILE" bash -c "cd '$PROJECT_PATH' && exec \"\$@\"" -- "$@"
+    SCRIPT_EOF
+
+    chmod +x /usr/local/bin/sandbox.sh
+
+# Configure sudo permissions
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+
+    echo "lima ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh" > /etc/sudoers.d/lima-environments
+    chmod 440 /etc/sudoers.d/lima-environments
+
+probes:
+- mode: readiness
+  description: "Environment management scripts installed"
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    if ! [ -x /usr/local/bin/create-namespace.sh ] || ! [ -x /usr/local/bin/sandbox.sh ]; then
+      echo >&2 "Environment scripts not installed"
+      exit 1
+    fi

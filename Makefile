@@ -67,13 +67,8 @@ clean:
 	rm -rf bin/
 	rm -f coverage.out coverage.html
 
-# Run tests
-test:
-	@echo "Running tests..."
-	$(GOTEST) -v -race -coverprofile=coverage.out -covermode=atomic ./...
-
 # Run tests with coverage
-coverage:
+test:
 	@echo "Running tests with coverage..."
 	$(GOTEST) -v -race -coverprofile=coverage.out -covermode=atomic ./...
 	$(GOCMD) tool cover -html=coverage.out -o coverage.html

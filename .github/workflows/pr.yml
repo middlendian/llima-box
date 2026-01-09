@@ -52,55 +52,12 @@ jobs:
             echo "✓ CHANGELOG.md was updated"
           fi
 
-  # Format check
-  format:
-    name: Check Formatting
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Check formatting
-        run: |
-          if [ -n "$(gofmt -l .)" ]; then
-            echo "Code is not formatted. Run 'make fmt' to format your code."
-            gofmt -l .
-            exit 1
-          fi
-
-  # Lint
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=5m
-
-  # Build and test
-  test:
-    name: Test
+  # Run all checks using make check
+  check:
+    name: Run make check
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go-version: ['1.24.x']
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -109,20 +66,19 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version-file: go.mod
           cache: true
+
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
 
       - name: Download dependencies
         run: go mod download
 
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Run go vet
-        run: go vet ./...
-
-      - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out -covermode=atomic ./...
+      - name: Run make check
+        run: make check
 
       - name: Upload coverage to Codecov
         if: matrix.os == 'ubuntu-latest'
@@ -135,7 +91,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
-  # Build binaries
+  # Build binaries for all platforms
   build:
     name: Build
     strategy:
@@ -180,7 +136,7 @@ jobs:
   # All checks passed
   all-checks:
     name: All Checks Passed
-    needs: [format, lint, test, build]
+    needs: [check, build]
     runs-on: ubuntu-latest
     steps:
       - name: Success

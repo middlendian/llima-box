@@ -67,7 +67,7 @@ clean:
 # Run tests
 test:
 	@echo "Running tests..."
-	$(GOTEST) -v -race ./...
+	$(GOTEST) -v -race -coverprofile=coverage.out -covermode=atomic ./...
 
 # Run tests with coverage
 coverage:

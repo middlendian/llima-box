@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Made `help` the default Makefile target for better UX
 - Release notes now extracted from CHANGELOG.md instead of git history
+- Simplified CI workflow to use `make check` instead of separate lint/vet jobs
+- Test target now generates coverage report for CI
 
 ### Fixed
 - Code formatting in pkg/env/doc.go and pkg/env/naming_test.go

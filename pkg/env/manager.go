@@ -60,7 +60,13 @@ func (m *Manager) ensureSSH(ctx context.Context) error {
 	}
 
 	// Connect with retries
-	if err := ssh.RetryConnect(client, 5, 2*time.Second); err != nil {
+	retryConfig := ssh.RetryConfig{
+		MaxAttempts:  5,
+		InitialDelay: 2 * time.Second,
+		MaxDelay:     10 * time.Second,
+		Multiplier:   2.0,
+	}
+	if err := client.ConnectWithRetry(retryConfig); err != nil {
 		return fmt.Errorf("failed to connect SSH: %w", err)
 	}
 

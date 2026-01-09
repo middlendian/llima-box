@@ -1,0 +1,66 @@
+# golangci-lint configuration
+# See https://golangci-lint.run/usage/configuration/
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Standard go vet
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Staticcheck checks
+    - unused        # Check for unused code
+    - gofmt         # Check formatting
+    - goimports     # Check import formatting
+    - misspell      # Check for misspelled words
+    - revive        # Fast linter
+    - bodyclose     # Check HTTP response bodies are closed
+    - gocritic      # Comprehensive linter
+    - gosec         # Security issues
+    - unconvert     # Remove unnecessary conversions
+    - unparam       # Detect unused function parameters
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: false
+
+  govet:
+    check-shadowing: true
+
+  gofmt:
+    simplify: true
+
+  goimports:
+    local-prefixes: github.com/middlendian/llima-box
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - experimental
+      - opinionated
+      - performance
+      - style
+
+  gosec:
+    excludes:
+      - G204 # Subprocess launched with variable - needed for SSH commands
+
+  misspell:
+    locale: US
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+  # Exclude some linters from running on tests files
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec

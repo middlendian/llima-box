@@ -42,11 +42,14 @@ Before committing, ensure all checks pass:
 make check
 ```
 
-This runs:
-- Code formatting check (`gofmt`)
-- `go vet`
-- golangci-lint (15+ linters)
-- All tests with race detector
+**What `make check` does:**
+1. Automatically formats code with `gofmt`
+2. Updates `go.mod` and `go.sum` with `go mod tidy`
+3. Runs `go vet` for static analysis
+4. Runs `golangci-lint` with 15+ linters
+5. Runs all tests with race detector
+
+**Important:** `make check` applies automatic fixes (formatting, module tidying) before validation. This ensures consistency and reduces manual toil. If you push code without running `make check`, the CI will automatically apply these fixes and push them to your branch.
 
 ### 3. Follow Go Best Practices
 

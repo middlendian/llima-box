@@ -20,7 +20,7 @@ GOFMT=gofmt
 GOLINT=golangci-lint
 
 # Build targets
-.PHONY: help check build all clean test coverage lint fmt vet install
+.PHONY: help check build all clean test coverage lint fmt fmt-check vet tidy install deps deps-verify
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -29,7 +29,7 @@ GOLINT=golangci-lint
 all: check build
 
 # Build the binary
-build:
+build: fmt tidy
 	@echo "Building $(BINARY_NAME)..."
 	$(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME) $(MAIN_PATH)
 
@@ -103,7 +103,13 @@ lint:
 	$(GOLINT) run ./...
 
 # Run all checks (formatting, vetting, linting, tests)
-check: fmt-check vet lint test
+# Build first to apply automatic fixes (fmt, tidy)
+check: build vet lint test
+
+# Tidy go.mod and go.sum
+tidy:
+	@echo "Tidying go.mod and go.sum..."
+	$(GOMOD) tidy
 
 # Update dependencies
 deps:

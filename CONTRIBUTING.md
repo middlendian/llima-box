@@ -76,20 +76,21 @@ make check
 
 ### Code Quality
 
-Before committing, ensure your code passes all checks:
+Before committing, run all quality checks:
 
 ```bash
-# Format code
-make fmt
-
-# Run linters
-make lint
-
-# Run all checks (formatting, vetting, linting, tests)
+# Run all checks (applies formatting/tidying, then validates)
 make check
 ```
 
-All pull requests must pass these checks in CI.
+**What `make check` does:**
+1. Automatically formats code with `gofmt`
+2. Updates `go.mod` and `go.sum` with `go mod tidy`
+3. Runs `go vet` for static analysis
+4. Runs `golangci-lint` with 15+ linters
+5. Runs all tests with race detector
+
+If `make check` passes locally, it will pass in CI. If you forget to run it, the CI will automatically apply formatting and module fixes, then commit and push them to your PR branch.
 
 ## Coding Standards
 

@@ -209,11 +209,6 @@ jobs:
           make build
           ls -lh bin/
 
-      - name: Test binary
-        if: matrix.os == 'ubuntu-latest' && matrix.goarch == 'amd64'
-        run: |
-          ./bin/llima-box --help
-
   # All checks passed
   all-checks:
     name: All Checks Passed

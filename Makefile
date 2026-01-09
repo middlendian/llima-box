@@ -20,10 +20,13 @@ GOFMT=gofmt
 GOLINT=golangci-lint
 
 # Build targets
-.PHONY: all build clean test coverage lint fmt vet install help
+.PHONY: help check build all clean test coverage lint fmt vet install
 
-# Default target
-all: test build
+# Default target - show help
+.DEFAULT_GOAL := help
+
+# Run all checks and build
+all: check build
 
 # Build the binary
 build:
@@ -113,20 +116,33 @@ deps-verify:
 	@echo "Verifying dependencies..."
 	$(GOMOD) verify
 
-# Help target
+# Help target (default)
 help:
-	@echo "Available targets:"
+	@echo "llima-box Makefile"
+	@echo ""
+	@echo "Common targets:"
+	@echo "  make help           - Show this help message (default)"
+	@echo "  make check          - Run all validations (fmt, vet, lint, test)"
 	@echo "  make build          - Build the binary for current platform"
+	@echo ""
+	@echo "Build targets:"
 	@echo "  make build-all      - Build binaries for all platforms"
 	@echo "  make install        - Install the binary to GOPATH/bin"
+	@echo "  make clean          - Clean build artifacts"
+	@echo ""
+	@echo "Testing targets:"
 	@echo "  make test           - Run tests"
 	@echo "  make coverage       - Run tests with coverage report"
+	@echo ""
+	@echo "Code quality targets:"
 	@echo "  make fmt            - Format code"
 	@echo "  make fmt-check      - Check if code is formatted"
 	@echo "  make vet            - Run go vet"
 	@echo "  make lint           - Run golangci-lint"
-	@echo "  make check          - Run all checks (fmt, vet, lint, test)"
-	@echo "  make clean          - Clean build artifacts"
+	@echo ""
+	@echo "Dependency targets:"
 	@echo "  make deps           - Download and tidy dependencies"
 	@echo "  make deps-verify    - Verify dependencies"
-	@echo "  make help           - Show this help message"
+	@echo ""
+	@echo "Other targets:"
+	@echo "  make all            - Run check and build"

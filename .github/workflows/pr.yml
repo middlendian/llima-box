@@ -186,7 +186,7 @@ jobs:
             goarch: amd64
           - goos: darwin
             goarch: arm64
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -32,7 +32,7 @@ export GOPROXY=https://proxy.golang.org,direct
 all: check build
 
 # Build the binary
-build: fmt
+build: deps fmt
 	@echo "Building $(BINARY_NAME)..."
 	$(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME) $(MAIN_PATH)
 

@@ -87,7 +87,7 @@ go install github.com/yourusername/llima-box@latest
 
 ## How It Works
 
-llima-box creates a Lima VM with Ubuntu 22.04 and uses Linux mount namespaces to isolate each agent environment:
+llima-box creates a Lima VM with Ubuntu 24.04 LTS and uses Linux mount namespaces to isolate each agent environment:
 
 1. **First run**: Creates and provisions a Lima VM named "agents"
 2. **Environment creation**: Creates a Linux user account and persistent mount namespace

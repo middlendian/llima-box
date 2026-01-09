@@ -10,8 +10,12 @@ The default Lima configuration is embedded in the llima-box binary and written t
 
 ```yaml
 images:
-- location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-amd64.img"
+# x86_64 / AMD64 architecture
+- location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-amd64.img"
   arch: "x86_64"
+# ARM64 / aarch64 architecture (Apple Silicon)
+- location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img"
+  arch: "aarch64"
 
 cpus: 4
 memory: "8GiB"
@@ -166,7 +170,7 @@ probes:
 
 ### Images
 
-Specifies the Ubuntu 22.04 cloud image for x86_64 architecture.
+Specifies Ubuntu 24.04 LTS cloud images for both x86_64 and ARM64 architectures. Lima automatically selects the appropriate image based on the host architecture.
 
 ### Resources
 

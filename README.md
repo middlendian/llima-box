@@ -48,6 +48,8 @@ llima-box delete-all
 - [Design Decisions](docs/DESIGN.md) - Why we made specific choices
 - [Lima Configuration](docs/LIMA_CONFIG.md) - VM configuration details
 - [Testing Plan](docs/TESTING.md) - Manual and automated testing approach
+- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Step-by-step implementation phases
+- [POC Status](docs/POC_STATUS.md) - Lima integration proof-of-concept validation
 
 ## Prerequisites
 
@@ -68,16 +70,20 @@ go install github.com/yourusername/llima-box@latest
 ### Completed
 - ✅ Architecture design
 - ✅ Documentation structure
+- ✅ Go project structure
+- ✅ Lima integration validated (POC)
+- ✅ VM lifecycle management (core implementation)
+- ✅ Multi-architecture support (x86_64 + ARM64)
 
 ### In Progress
-- 🚧 Go project structure
-- 🚧 Lima integration
+- 🚧 Environment naming and sanitization
+- 🚧 SSH client for VM communication
+- 🚧 Environment manager (namespace operations)
 
 ### Planned
-- ⏳ VM lifecycle management
-- ⏳ Environment management (create, list, delete)
-- ⏳ Shell command implementation
+- ⏳ CLI commands (shell, list, delete, delete-all)
 - ⏳ Testing and validation
+- ⏳ End-to-end integration
 
 ## How It Works
 

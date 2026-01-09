@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Code formatting in pkg/env/doc.go and pkg/env/naming_test.go
+- CI workflow now applies auto-fixes before validation to handle incomplete go.sum
 
 ## [0.1.0] - TBD
 

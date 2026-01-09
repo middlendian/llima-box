@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-platform build support (Linux/macOS, ARM64/AMD64)
 - GitHub Actions workflow for pull request validation
 - GitHub Actions workflow for automated releases
+- GitHub Actions check to remind contributors to update CHANGELOG.md
+- Pull request template with CHANGELOG.md reminder
+- CLAUDE.md with instructions for AI agents
+- CHANGELOG.md following Keep a Changelog conventions
 - golangci-lint configuration with 15+ linters
 - Comprehensive build and development documentation
 - CONTRIBUTING.md with contributor guidelines
@@ -21,6 +25,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Made `help` the default Makefile target for better UX
+- Release notes now extracted from CHANGELOG.md instead of git history
+
+### Fixed
+- Code formatting in pkg/env/doc.go and pkg/env/naming_test.go
 
 ## [0.1.0] - TBD
 

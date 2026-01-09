@@ -109,11 +109,6 @@ lint:
 # Build first to apply automatic fixes (fmt, tidy)
 check: build vet lint deps-verify fmt-verify test
 
-# Tidy go.mod and go.sum
-tidy:
-	@echo "Tidying go.mod and go.sum..."
-	$(GOMOD) tidy
-
 # Update dependencies
 deps:
 	@echo "Downloading dependencies..."

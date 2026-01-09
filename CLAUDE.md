@@ -45,12 +45,14 @@ Example:
 
 **Exceptions:** Documentation-only changes or trivial typo fixes may skip the changelog.
 
-### 2. Run Quality Checks
+### 2. ALWAYS Run Quality Checks Before Completion
 
-Before committing, ensure all checks pass:
+**CRITICAL: Before you consider any work complete, you MUST run:**
 ```bash
 make check
 ```
+
+**This is mandatory, not optional.** Never tell the user work is done without running `make check` first.
 
 **What `make check` does:**
 1. Automatically formats code with `gofmt`
@@ -58,6 +60,11 @@ make check
 3. Runs `go vet` for static analysis
 4. Runs `golangci-lint` with 15+ linters
 5. Runs all tests with race detector
+
+**If network issues prevent `make check` from working:**
+- Use `make check-fast` which runs fmt, vet, and test without network dependencies
+- Document that full `make check` should be run when network is available
+- The CI will run full checks, but catch issues early with `make check-fast`
 
 **Important:** `make check` applies automatic fixes (formatting, module tidying) before validation. This ensures consistency and reduces manual toil. If you push code without running `make check`, the CI will automatically apply these fixes and push them to your branch.
 
@@ -73,7 +80,8 @@ make check
 
 The project uses Make for build automation:
 - `make help` - Show available targets (default)
-- `make check` - Run all validations
+- `make check` - Run all validations (REQUIRED before completion)
+- `make check-fast` - Run fast checks without network (fmt, vet, test)
 - `make build` - Build the binary
 - `make test` - Run tests
 - `make fmt` - Format code
@@ -104,8 +112,10 @@ llima-box/
 1. **Read existing code first** - Never propose changes to code you haven't read
 2. **Update CHANGELOG.md** - Add your changes to `[Unreleased]`
 3. **Write tests** - All new code needs tests
-4. **Run checks** - `make check` must pass
+4. **Run checks** - `make check` (or `make check-fast`) must pass BEFORE considering work complete
 5. **Commit with clear messages** - Use imperative mood ("Add feature" not "Added feature")
+
+**CRITICAL:** Step 4 is mandatory. Never commit, push, or tell the user work is complete without running validation checks first. If network issues prevent `make check`, use `make check-fast` as a minimum.
 
 ### Commit Message Format
 

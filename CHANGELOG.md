@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Persistent namespace support using Linux mount namespaces
 - User account management for environment isolation
 - Namespace entry functionality for running commands in isolated environments
+- `make check-fast` target for running validation without network dependencies
 - Makefile with build, test, lint, and format targets
 - Multi-platform build support (Linux/macOS, ARM64/AMD64)
 - GitHub Actions workflow for pull request validation with automatic code fixes

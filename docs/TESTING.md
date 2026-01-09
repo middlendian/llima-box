@@ -109,11 +109,11 @@ go run cmd/llima-box/main.go version  # Or any command that triggers VM check
 limactl list
 
 # Test VM start/stop
-limactl stop agents
+limactl stop llima-box
 # Run command again - should auto-start VM
 
 # Test VM deletion and recreation
-limactl delete agents
+limactl delete llima-box
 # Run command again - should create new VM
 ```
 
@@ -123,7 +123,7 @@ limactl delete agents
 
 ```bash
 # First, ensure Lima VM is running
-limactl start agents  # Or let llima-box create it
+limactl start llima-box  # Or let llima-box create it
 
 # Run SSH client integration tests
 cd /path/to/llima-box
@@ -144,15 +144,15 @@ RUN_INTEGRATION_TESTS=true go test ./pkg/ssh/... -v -run TestConnectWithRetry
 
 ```bash
 # Test interactive SSH connection
-lima agents bash
+lima llima-box bash
 # Should connect successfully
 
 # Test SSH agent forwarding
-lima agents bash
+lima llima-box bash
 ssh-add -l  # Should show your SSH keys
 
 # Test command execution
-lima agents uname -a
+lima llima-box uname -a
 ```
 
 ### Environment Naming Tests
@@ -178,14 +178,14 @@ Integration tests require a macOS system with Lima. These are performed manually
 **Goal**: Verify VM creation and first environment setup.
 
 **Steps:**
-1. Ensure no Lima VM named "agents" exists
+1. Ensure no Lima VM named "llima-box" exists
 2. Run: `llima-box shell`
 3. Wait for VM creation and provisioning
 4. Verify shell launches in isolated environment
 5. Verify host path is preserved
 
 **Expected Results:**
-- VM "agents" is created
+- VM "llima-box" is created
 - Environment user account created
 - Namespace created successfully
 - Shell starts in project directory
@@ -284,7 +284,7 @@ ls /Users             # Should only show project path
 
 **Steps:**
 1. Create environment and exit
-2. Stop VM: `limactl stop agents`
+2. Stop VM: `limactl stop llima-box`
 3. Run: `llima-box shell` (same project)
 
 **Expected Results:**
@@ -387,7 +387,7 @@ Expected: Auto-recovery or clear error message
 **Measurement**: Time for VM to become ready.
 
 **Steps:**
-1. Delete VM: `limactl delete agents`
+1. Delete VM: `limactl delete llima-box`
 2. Run: `time llima-box shell`
 
 **Target**: < 60 seconds for full VM creation and provisioning

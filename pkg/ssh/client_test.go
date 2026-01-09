@@ -50,7 +50,7 @@ func TestClientConnection(t *testing.T) {
 
 	instanceName := os.Getenv("LIMA_INSTANCE_NAME")
 	if instanceName == "" {
-		instanceName = "agents"
+		instanceName = "llima-box"
 	}
 
 	client, err := NewClient(instanceName)
@@ -80,7 +80,7 @@ func TestExec(t *testing.T) {
 
 	instanceName := os.Getenv("LIMA_INSTANCE_NAME")
 	if instanceName == "" {
-		instanceName = "agents"
+		instanceName = "llima-box"
 	}
 
 	client, err := NewClient(instanceName)
@@ -141,7 +141,7 @@ func TestExecContext(t *testing.T) {
 
 	instanceName := os.Getenv("LIMA_INSTANCE_NAME")
 	if instanceName == "" {
-		instanceName = "agents"
+		instanceName = "llima-box"
 	}
 
 	client, err := NewClient(instanceName)
@@ -182,7 +182,7 @@ func TestConnectWithRetry(t *testing.T) {
 
 	instanceName := os.Getenv("LIMA_INSTANCE_NAME")
 	if instanceName == "" {
-		instanceName = "agents"
+		instanceName = "llima-box"
 	}
 
 	client, err := NewClient(instanceName)
@@ -237,7 +237,7 @@ func TestGetUser(t *testing.T) {
 
 	instanceName := os.Getenv("LIMA_INSTANCE_NAME")
 	if instanceName == "" {
-		instanceName = "agents"
+		instanceName = "llima-box"
 	}
 
 	client, err := NewClient(instanceName)

@@ -34,7 +34,7 @@ func runTestVM(cmd *cobra.Command, args []string) {
 	fmt.Println("llima-box VM Management Test")
 	fmt.Println("=============================")
 
-	manager := vm.NewManager("agents")
+	manager := vm.NewManager("llima-box")
 
 	// Check if VM exists
 	fmt.Print("\nChecking if VM exists... ")

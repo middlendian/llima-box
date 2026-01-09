@@ -4,7 +4,7 @@ This document describes the Lima VM configuration used by llima-box.
 
 ## Configuration File
 
-The default Lima configuration is embedded in the llima-box binary and written to `~/.lima/agents/lima.yaml` on first run.
+The default Lima configuration is embedded in the llima-box binary and written to `~/.lima/llima-box/lima.yaml` on first run.
 
 ## Default Configuration
 
@@ -178,7 +178,7 @@ Specifies Ubuntu 24.04 LTS cloud images for both x86_64 and ARM64 architectures.
 - **Memory**: 8 GiB
 - **Disk**: 100 GiB
 
-These defaults work well for multiple LLM agent environments. Users can customize by editing `~/.lima/agents/lima.yaml` after first run.
+These defaults work well for multiple LLM agent environments. Users can customize by editing `~/.lima/llima-box/lima.yaml` after first run.
 
 ### Mounts
 
@@ -231,13 +231,13 @@ This allows llima-box to manage environments without prompting for passwords.
 
 Users can customize the VM configuration by:
 
-1. **Before first run**: Create `~/.lima/agents/lima.yaml` manually
-2. **After first run**: Edit `~/.lima/agents/lima.yaml` and recreate VM
+1. **Before first run**: Create `~/.lima/llima-box/lima.yaml` manually
+2. **After first run**: Edit `~/.lima/llima-box/lima.yaml` and recreate VM
 
 Changes require VM recreation:
 ```bash
 llima-box delete-all
-limactl delete agents
+limactl delete llima-box
 llima-box shell  # Recreates VM with new config
 ```
 

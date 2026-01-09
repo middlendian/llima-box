@@ -7,7 +7,7 @@
 //
 // Create a client and execute a command:
 //
-//	client, err := ssh.NewClient("agents")
+//	client, err := ssh.NewClient("llima-box")
 //	if err != nil {
 //		log.Fatal(err)
 //	}
@@ -23,7 +23,7 @@
 //
 // Launch an interactive shell:
 //
-//	client, err := ssh.NewClient("agents")
+//	client, err := ssh.NewClient("llima-box")
 //	if err != nil {
 //		log.Fatal(err)
 //	}
@@ -49,7 +49,7 @@
 // The client automatically connects on first command execution.
 // You can also explicitly connect:
 //
-//	client, err := ssh.NewClient("agents")
+//	client, err := ssh.NewClient("llima-box")
 //	if err != nil {
 //		log.Fatal(err)
 //	}

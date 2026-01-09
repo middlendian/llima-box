@@ -12,7 +12,7 @@ import (
 
 const (
 	// DefaultInstanceName is the name of the Lima VM instance
-	DefaultInstanceName = "agents"
+	DefaultInstanceName = "llima-box"
 )
 
 // Manager handles Lima VM lifecycle operations

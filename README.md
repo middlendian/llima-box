@@ -158,9 +158,6 @@ make build-all
 # Run tests
 make test
 
-# Run tests with coverage
-make coverage
-
 # Format code
 make fmt
 
@@ -259,7 +256,7 @@ This project is in early development. Contributions welcome once the core implem
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+GPLv3 License - see [LICENSE](LICENSE) for details.
 
 ## Why "llima-box"?
 

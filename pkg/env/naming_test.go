@@ -10,7 +10,7 @@ func TestGenerateName(t *testing.T) {
 	tests := []struct {
 		name        string
 		path        string
-		wantPrefix  string  // Expected prefix (before hash)
+		wantPrefix  string // Expected prefix (before hash)
 		wantErr     bool
 		description string
 	}{

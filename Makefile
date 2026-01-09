@@ -29,7 +29,7 @@ GOLINT=golangci-lint
 all: check build
 
 # Build the binary
-build: fmt tidy
+build: fmt
 	@echo "Building $(BINARY_NAME)..."
 	$(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME) $(MAIN_PATH)
 

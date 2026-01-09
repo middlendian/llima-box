@@ -59,7 +59,8 @@ func (c *Client) ExecWithRetry(cmd string, config RetryConfig) (string, error) {
 
 	delay := config.InitialDelay
 	for attempt := 1; attempt <= config.MaxAttempts; attempt++ {
-		output, err := c.Exec(cmd)
+		var err error
+		output, err = c.Exec(cmd)
 		if err == nil {
 			return output, nil
 		}

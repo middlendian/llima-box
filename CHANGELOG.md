@@ -36,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Code formatting in pkg/env/doc.go and pkg/env/naming_test.go
 - Simplified CI workflow to just run 'make check' (was overcomplicated)
+- Variable shadowing in pkg/ssh/retry.go that could cause incorrect retry behavior
 
 ## [0.1.0] - TBD
 

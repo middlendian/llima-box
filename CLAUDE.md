@@ -21,6 +21,16 @@ llima-box is a Go project that creates secure, isolated environments for LLM age
   - **Fixed**: Bug fixes
   - **Security**: Security fixes
 
+**Important Guidelines:**
+
+- **Only document changes from main branch's perspective**: Don't include incremental development fixes made during branch work
+- **User-facing, high-level descriptions**: Write for users, not developers. Focus on what changed, not implementation details
+- **Don't include**:
+  - Fixes to bugs you introduced in the same branch
+  - Internal refactoring unless it affects users
+  - CI/workflow tweaks unless they affect contributor experience
+  - Build process details (e.g., "fixed variable shadowing" or "updated import")
+
 Example:
 ```markdown
 ## [Unreleased]
@@ -30,7 +40,7 @@ Example:
 - Support for custom VM configurations
 
 ### Fixed
-- Race condition in VM status check
+- Race condition in VM status check (bug that existed in main)
 ```
 
 **Exceptions:** Documentation-only changes or trivial typo fixes may skip the changelog.

@@ -10,34 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Makefile with build, test, lint, and format targets
 - Multi-platform build support (Linux/macOS, ARM64/AMD64)
-- GitHub Actions workflow for pull request validation
-- GitHub Actions workflow for automated releases
-- GitHub Actions check to remind contributors to update CHANGELOG.md
+- GitHub Actions workflow for pull request validation with automatic code fixes
+- GitHub Actions workflow for automated releases with changelog extraction
 - Pull request template with CHANGELOG.md reminder
 - CLAUDE.md with instructions for AI agents
 - CHANGELOG.md following Keep a Changelog conventions
 - golangci-lint configuration with 15+ linters
-- Comprehensive build and development documentation
-- CONTRIBUTING.md with contributor guidelines
-- VM lifecycle management implementation
-- SSH client with retry logic and agent forwarding
-- Environment naming and sanitization with tests
-
-### Changed
-- Made `help` the default Makefile target for better UX
-- Release notes now extracted from CHANGELOG.md instead of git history
-- Simplified CI workflow to use `make check` instead of separate lint/vet jobs
-- Test target now generates coverage report for CI
-- Build target now automatically applies formatting and module tidying
-- Check target depends on build to ensure fixes are applied before validation
-- CI automatically commits and pushes formatting/module fixes with PR notification tagging commit authors
-- CI now only uses ubuntu-latest, relying on Go cross-compilation for multi-platform builds
-
-### Fixed
-- Code formatting in pkg/env/doc.go and pkg/env/naming_test.go
-- Simplified CI workflow to just run 'make check' (was overcomplicated)
-- Variable shadowing in pkg/ssh/retry.go that could cause incorrect retry behavior
-- SSH client to use correct Lima instance API (removed non-existent sshutil.SSHConfig call)
+- Comprehensive build and development documentation in CONTRIBUTING.md
 
 ## [0.1.0] - TBD
 

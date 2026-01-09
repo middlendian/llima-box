@@ -107,7 +107,7 @@ lint:
 
 # Run all checks (formatting, vetting, linting, tests)
 # Build first to apply automatic fixes (fmt, tidy)
-check: build vet lint test
+check: build vet lint deps-verify fmt-verify test
 
 # Tidy go.mod and go.sum
 tidy:

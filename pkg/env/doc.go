@@ -1,7 +1,7 @@
 // Package env provides environment management for llima-box, including
 // environment naming, namespace operations, and user account management.
 //
-// Environment Naming
+// # Environment Naming
 //
 // Each isolated environment is uniquely identified by a name generated from
 // the project path. The naming algorithm ensures:

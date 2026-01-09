@@ -59,11 +59,38 @@ llima-box delete-all
 
 ## Installation
 
-**Not yet available** - Project is in development.
+### From Release (Recommended)
 
-Once ready, installation will be:
+Download the latest release for your platform from the [releases page](https://github.com/middlendian/llima-box/releases).
+
+**macOS ARM64 (Apple Silicon):**
 ```bash
-go install github.com/yourusername/llima-box@latest
+curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-darwin-arm64.tar.gz
+tar -xzf llima-box-darwin-arm64.tar.gz
+chmod +x llima-box-darwin-arm64
+sudo mv llima-box-darwin-arm64 /usr/local/bin/llima-box
+```
+
+**macOS AMD64 (Intel):**
+```bash
+curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-darwin-amd64.tar.gz
+tar -xzf llima-box-darwin-amd64.tar.gz
+chmod +x llima-box-darwin-amd64
+sudo mv llima-box-darwin-amd64 /usr/local/bin/llima-box
+```
+
+### From Source
+
+```bash
+go install github.com/middlendian/llima-box@latest
+```
+
+Or clone and build:
+```bash
+git clone https://github.com/middlendian/llima-box.git
+cd llima-box
+make build
+sudo mv bin/llima-box /usr/local/bin/
 ```
 
 ## Development Status
@@ -110,9 +137,125 @@ See [Architecture](docs/ARCHITECTURE.md) for detailed technical design.
 
 llima-box is designed for development environments, not for running untrusted code. See [Architecture](docs/ARCHITECTURE.md#security-model) for threat model details.
 
+## Development
+
+### Prerequisites
+
+- Go 1.24.7 or later
+- golangci-lint (for linting): `go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest`
+
+### Building
+
+The project uses a Makefile for common development tasks:
+
+```bash
+# Build for current platform
+make build
+
+# Build for all platforms (Linux and macOS, ARM64 and AMD64)
+make build-all
+
+# Run tests
+make test
+
+# Run tests with coverage
+make coverage
+
+# Format code
+make fmt
+
+# Run linters
+make lint
+
+# Run all checks (formatting, vetting, linting, tests)
+make check
+
+# Clean build artifacts
+make clean
+
+# Show all available targets
+make help
+```
+
+### Project Structure
+
+```
+llima-box/
+├── cmd/
+│   └── llima-box/      # Main application entry point
+├── pkg/
+│   ├── env/            # Environment naming and sanitization
+│   ├── ssh/            # SSH client for VM communication
+│   └── vm/             # VM lifecycle management
+├── docs/               # Documentation
+├── .github/
+│   └── workflows/      # CI/CD workflows
+├── Makefile            # Build automation
+└── .golangci.yml       # Linter configuration
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+make test
+
+# Run tests with race detector and coverage
+go test -v -race -coverprofile=coverage.out ./...
+
+# View coverage report
+go tool cover -html=coverage.out
+```
+
+### Code Quality
+
+Before submitting a PR, ensure your code passes all checks:
+
+```bash
+make check
+```
+
+This will:
+1. Check code formatting
+2. Run `go vet`
+3. Run golangci-lint
+4. Run all tests
+
+### Continuous Integration
+
+The project uses GitHub Actions for CI/CD:
+
+- **Pull Requests**: Automatically run tests, linting, and build checks on all PRs
+- **Releases**: Automatically build and publish binaries for all platforms when a version tag is pushed
+
+Release notes are extracted from [CHANGELOG.md](CHANGELOG.md), which follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
+
+To create a new release:
+```bash
+# 1. Update CHANGELOG.md with version and date
+# 2. Commit the changelog
+git add CHANGELOG.md
+git commit -m "Prepare release v1.0.0"
+git push origin main
+
+# 3. Create and push the tag
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
 ## Contributing
 
 This project is in early development. Contributions welcome once the core implementation is complete.
+
+### Contribution Guidelines
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Run `make check` to ensure code quality
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
 
 ## License
 

@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/lima-vm/lima/pkg/sshutil"
 	"github.com/lima-vm/lima/pkg/store"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
@@ -52,18 +51,23 @@ func (c *Client) Connect() error {
 		return nil // Already connected
 	}
 
-	// Get SSH configuration from Lima
-	sshConfig, err := sshutil.SSHConfig(c.instance.Dir, false)
-	if err != nil {
-		return fmt.Errorf("failed to get SSH config: %w", err)
+	// Get SSH user from instance config
+	user := "lima" // Default user
+	if c.instance.Config != nil && c.instance.Config.User.Name != nil {
+		user = *c.instance.Config.User.Name
 	}
 
-	// Convert Lima's SSH config to crypto/ssh config
-	authMethods := []ssh.AuthMethod{}
+	// Get SSH key paths - Lima stores keys in $LIMA_HOME/_config/
+	limaDir := store.Directory()
+	keyPaths := []string{
+		filepath.Join(limaDir, "_config", "user"),
+		filepath.Join(c.instance.Dir, "ssh_key"),
+	}
 
-	// Add SSH keys
-	for _, keyPath := range sshConfig.IdentityFile {
-		key, err := os.ReadFile(keyPath)
+	// Load SSH keys
+	authMethods := []ssh.AuthMethod{}
+	for _, keyPath := range keyPaths {
+		key, err := os.ReadFile(keyPath) // #nosec G304 -- SSH key paths are controlled by Lima
 		if err != nil {
 			continue // Skip invalid keys
 		}
@@ -77,22 +81,31 @@ func (c *Client) Connect() error {
 	}
 
 	if len(authMethods) == 0 {
-		return fmt.Errorf("no valid SSH keys found")
+		return fmt.Errorf("no valid SSH keys found in %v", keyPaths)
 	}
 
 	// Create SSH client config
 	c.sshConfig = &ssh.ClientConfig{
-		User:            sshConfig.User(),
+		User:            user,
 		Auth:            authMethods,
-		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // Lima VMs are trusted
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(), // #nosec G106 -- Lima VMs are trusted local VMs
 		Timeout:         10 * time.Second,
 	}
 
-	// Connect to SSH
-	addr := net.JoinHostPort(sshConfig.Hostname(), fmt.Sprintf("%d", sshConfig.Port()))
+	// Connect to SSH using instance hostname and port
+	host := c.instance.Hostname
+	if host == "" {
+		host = "127.0.0.1"
+	}
+	port := c.instance.SSHLocalPort
+	if port == 0 {
+		port = 22
+	}
+
+	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
 	client, err := ssh.Dial("tcp", addr, c.sshConfig)
 	if err != nil {
-		return fmt.Errorf("failed to dial SSH: %w", err)
+		return fmt.Errorf("failed to dial SSH at %s: %w", addr, err)
 	}
 
 	c.client = client
@@ -113,7 +126,7 @@ func (c *Client) Exec(cmd string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// Run command and capture output
 	output, err := session.CombinedOutput(cmd)
@@ -137,7 +150,7 @@ func (c *Client) ExecContext(ctx context.Context, cmd string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// Create channel for command completion
 	done := make(chan error, 1)
@@ -151,7 +164,7 @@ func (c *Client) ExecContext(ctx context.Context, cmd string) (string, error) {
 	// Wait for command or context cancellation
 	select {
 	case <-ctx.Done():
-		session.Signal(ssh.SIGKILL)
+		_ = session.Signal(ssh.SIGKILL)
 		return "", ctx.Err()
 	case err := <-done:
 		if err != nil {
@@ -175,7 +188,7 @@ func (c *Client) ExecInteractive(cmd string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create session: %w", err)
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	// Setup SSH agent forwarding if available
 	if err := setupAgentForwarding(session); err != nil {
@@ -196,7 +209,7 @@ func (c *Client) ExecInteractive(cmd string) error {
 		if err != nil {
 			return fmt.Errorf("failed to make terminal raw: %w", err)
 		}
-		defer term.Restore(fd, state)
+		defer func() { _ = term.Restore(fd, state) }()
 
 		width, height, err := term.GetSize(fd)
 		if err != nil {
@@ -242,25 +255,25 @@ func (c *Client) ExecPipe(cmd string) (stdin io.WriteCloser, stdout, stderr io.R
 	// Get pipes
 	stdin, err = session.StdinPipe()
 	if err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to create stdin pipe: %w", err)
 	}
 
 	stdout, err = session.StdoutPipe()
 	if err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to create stdout pipe: %w", err)
 	}
 
 	stderr, err = session.StderrPipe()
 	if err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to create stderr pipe: %w", err)
 	}
 
 	// Start command
 	if err := session.Start(cmd); err != nil {
-		session.Close()
+		_ = session.Close()
 		return nil, nil, nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
@@ -307,15 +320,19 @@ func setupAgentForwarding(session *ssh.Session) error {
 	}
 
 	// Request agent forwarding
-	if err := session.RequestAgentForwarding(); err != nil {
+	ok, err := session.SendRequest("auth-agent-req@openssh.com", true, nil)
+	if err != nil {
 		return fmt.Errorf("failed to request agent forwarding: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("agent forwarding request denied")
 	}
 
 	return nil
 }
 
 // handleTerminalResize monitors terminal size changes and updates the remote PTY
-func handleTerminalResize(session *ssh.Session, fd int) {
+func handleTerminalResize(_ *ssh.Session, _ int) {
 	// This is a simplified version - a full implementation would use SIGWINCH
 	// For now, we'll just set the initial size
 	// A production version would listen for terminal resize signals

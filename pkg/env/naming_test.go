@@ -10,7 +10,7 @@ func TestGenerateName(t *testing.T) {
 	tests := []struct {
 		name        string
 		path        string
-		wantPrefix  string  // Expected prefix (before hash)
+		wantPrefix  string // Expected prefix (before hash)
 		wantErr     bool
 		description string
 	}{
@@ -217,7 +217,7 @@ func TestPathHash(t *testing.T) {
 			}
 			// Check it's all hex
 			for _, r := range hash {
-				if !((r >= '0' && r <= '9') || (r >= 'a' && r <= 'f')) {
+				if (r < '0' || r > '9') && (r < 'a' || r > 'f') {
 					t.Errorf("pathHash() = %v, contains non-hex character", hash)
 				}
 			}

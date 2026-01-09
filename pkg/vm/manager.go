@@ -1,3 +1,4 @@
+// Package vm provides Lima VM lifecycle management functionality.
 package vm
 
 import (
@@ -180,6 +181,7 @@ func (m *Manager) WriteDefaultConfig() error {
 	limaDir := store.Directory()
 	instanceDir := filepath.Join(limaDir, m.instanceName)
 
+	// #nosec G301 -- Standard permissions for Lima instance directories
 	if err := os.MkdirAll(instanceDir, 0755); err != nil {
 		return fmt.Errorf("failed to create instance directory: %w", err)
 	}
@@ -190,6 +192,7 @@ func (m *Manager) WriteDefaultConfig() error {
 		return err
 	}
 
+	// #nosec G306 -- Standard permissions for config files
 	if err := os.WriteFile(configPath, []byte(configYAML), 0644); err != nil {
 		return fmt.Errorf("failed to write config file: %w", err)
 	}

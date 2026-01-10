@@ -9,6 +9,8 @@ before:
     - go mod tidy
     # Run tests before building
     - go test ./...
+    # Extract release notes from CHANGELOG.md for this version
+    - sh -c 'awk "/^## \[$(echo {{ .Version }} | sed "s/^v//")\]/,/^## \[/ { if (/^## \[/ && !found) { found=1; next } if (/^## \[/ && found) exit; if (found) print }" CHANGELOG.md > .release-notes.md'
 
 builds:
   - id: llima-box
@@ -75,11 +77,8 @@ snapshot:
   name_template: "{{ incpatch .Version }}-next"
 
 changelog:
-  # Extract changelog from CHANGELOG.md
-  use: github-native
-
-  # We'll use release notes template to extract from CHANGELOG.md
-  skip: false
+  # Disable git-based changelog since we're using CHANGELOG.md
+  disable: true
 
 release:
   # Release to GitHub
@@ -97,58 +96,23 @@ release:
   header: |
     ## Installation
 
-    ### Using mise (recommended)
+    See the [Installation section in the README](https://github.com/middlendian/llima-box#installation) for detailed instructions.
 
-    The easiest way to install llima-box is using [mise](https://mise.jdx.dev):
+    **Quick start with mise (recommended):**
     ```bash
     mise use -g github:middlendian/llima-box
     ```
 
-    ### Manual Installation
+    **Download binaries below** ↓ or see README for platform-specific manual installation steps.
 
-    Download the appropriate binary for your platform and add it to your PATH:
-
-    #### macOS ARM64 (Apple Silicon)
-    ```bash
-    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-macos-arm64.tar.gz
-    tar -xzf llima-box-macos-arm64.tar.gz
-    sudo mv llima-box-macos-arm64/bin/llima-box /usr/local/bin/
-    ```
-
-    #### macOS x64 (Intel)
-    ```bash
-    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-macos-x64.tar.gz
-    tar -xzf llima-box-macos-x64.tar.gz
-    sudo mv llima-box-macos-x64/bin/llima-box /usr/local/bin/
-    ```
-
-    #### Linux ARM64
-    ```bash
-    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-linux-arm64.tar.gz
-    tar -xzf llima-box-linux-arm64.tar.gz
-    sudo mv llima-box-linux-arm64/bin/llima-box /usr/local/bin/
-    ```
-
-    #### Linux x64
-    ```bash
-    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-linux-x64.tar.gz
-    tar -xzf llima-box-linux-x64.tar.gz
-    sudo mv llima-box-linux-x64/bin/llima-box /usr/local/bin/
-    ```
-
-    ## Verify Checksums
-
-    Download checksums.txt and verify your download:
-    ```bash
-    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/checksums.txt
-    sha256sum -c checksums.txt
-    ```
-
-  # Footer with changelog note - will be appended after the changelog section
+  # Footer pointing to full changelog
   footer: |
     ---
 
-    For more details, see the [CHANGELOG.md](https://github.com/middlendian/llima-box/blob/main/CHANGELOG.md).
+    **Full changelog**: [CHANGELOG.md](https://github.com/middlendian/llima-box/blob/main/CHANGELOG.md)
+
+  # Use extracted changelog from CHANGELOG.md
+  release_notes_file: .release-notes.md
 
   # Include additional files in the release
   extra_files:

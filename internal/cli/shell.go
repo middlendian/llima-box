@@ -35,7 +35,8 @@ Examples:
 
   # Run command with arguments
   llima-box shell -- python script.py --arg value`,
-		RunE: runShell,
+		RunE:         runShell,
+		SilenceUsage: true,
 	}
 
 	return cmd

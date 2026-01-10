@@ -59,6 +59,7 @@ provision:
     # Pre-create the namespace file - unshare requires it to exist
     touch "$NS_FILE"
 
+    # Start namespace in background and capture PID
     unshare --mount="$NS_FILE" --propagation private bash -c '
         mount --make-rprivate /
         mkdir -p /tmp/isolated-root
@@ -93,9 +94,30 @@ provision:
 
         chroot /tmp/isolated-root sleep infinity
     ' &
+    UNSHARE_PID=$!
 
-    sleep 2
-    echo "Namespace created successfully"
+    # Wait for namespace file to be created (with timeout)
+    MAX_WAIT=10
+    WAIT_COUNT=0
+    while [ ! -s "$NS_FILE" ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
+        sleep 0.5
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+    done
+
+    # Verify namespace file was created
+    if [ ! -s "$NS_FILE" ]; then
+        echo "Error: Namespace file was not created after ${MAX_WAIT} seconds" >&2
+        kill $UNSHARE_PID 2>/dev/null || true
+        exit 1
+    fi
+
+    # Verify background process is still running
+    if ! kill -0 $UNSHARE_PID 2>/dev/null; then
+        echo "Error: Namespace process died unexpectedly" >&2
+        exit 1
+    fi
+
+    echo "Namespace created successfully (PID: $UNSHARE_PID)"
     SCRIPT_EOF
 
     chmod +x /usr/local/bin/create-namespace.sh

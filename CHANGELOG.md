@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - JSON parsing error when `limactl list --json` returns a single instance object instead of an array
 - Namespace creation failing when namespace file doesn't exist prior to `unshare` command
 - Sudoers configuration using hardcoded 'lima' user instead of actual VM user
+- Error propagation from background namespace process - now properly detects failures
+- Usage/help text printing on every error - now shows only error messages
 
 ## [0.3.0]
 

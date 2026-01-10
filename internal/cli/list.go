@@ -23,7 +23,8 @@ Environments are created automatically when you run 'llima-box shell'.
 
 Example:
   llima-box list`,
-		RunE: runList,
+		RunE:         runList,
+		SilenceUsage: true,
 	}
 
 	return cmd

@@ -39,6 +39,7 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDelete(cmd, args, force)
 		},
+		SilenceUsage: true,
 	}
 
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "Delete without confirmation")

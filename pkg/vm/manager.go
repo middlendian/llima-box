@@ -128,15 +128,21 @@ func (m *Manager) listInstances() ([]Instance, error) {
 		return nil, err
 	}
 
-	// Try to unmarshal as array first
+	// limactl outputs JSON Lines format (one JSON object per line)
 	var instances []Instance
-	if err := json.Unmarshal(output, &instances); err != nil {
-		// If that fails, try as a single object
-		var instance Instance
-		if err2 := json.Unmarshal(output, &instance); err2 != nil {
-			return nil, fmt.Errorf("failed to parse limactl list output as array or object: array error: %w, object error: %v", err, err2)
+	lines := strings.Split(string(output), "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
 		}
-		instances = []Instance{instance}
+
+		var instance Instance
+		if err := json.Unmarshal([]byte(line), &instance); err != nil {
+			return nil, fmt.Errorf("failed to parse limactl list output line: %w", err)
+		}
+		instances = append(instances, instance)
 	}
 
 	return instances, nil

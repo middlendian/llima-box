@@ -2,13 +2,14 @@
 package vm
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
-
-	"github.com/lima-vm/lima/pkg/instance"
-	"github.com/lima-vm/lima/pkg/store"
+	"strings"
 )
 
 const (
@@ -16,9 +17,35 @@ const (
 	DefaultInstanceName = "llima-box"
 )
 
+// Instance represents a Lima VM instance
+type Instance struct {
+	Name         string          `json:"name"`
+	Status       string          `json:"status"`
+	Dir          string          `json:"dir"`
+	Arch         string          `json:"arch"`
+	CPUs         int             `json:"cpus"`
+	Memory       int64           `json:"memory"`
+	Disk         int64           `json:"disk"`
+	SSHLocalPort int             `json:"sshLocalPort"`
+	HostAgentPID int             `json:"hostAgentPID"`
+	DriverPID    int             `json:"driverPID"`
+	Config       *InstanceConfig `json:"config,omitempty"`
+}
+
+// InstanceConfig represents Lima instance configuration
+type InstanceConfig struct {
+	User *UserConfig `json:"user,omitempty"`
+}
+
+// UserConfig represents Lima user configuration
+type UserConfig struct {
+	Name *string `json:"name,omitempty"`
+}
+
 // Manager handles Lima VM lifecycle operations
 type Manager struct {
 	instanceName string
+	limactl      string
 }
 
 // NewManager creates a new VM manager
@@ -28,37 +55,93 @@ func NewManager(instanceName string) *Manager {
 	}
 	return &Manager{
 		instanceName: instanceName,
+		limactl:      "limactl",
 	}
+}
+
+// findLimactl finds the limactl binary in PATH
+func (m *Manager) findLimactl() error {
+	_, err := exec.LookPath(m.limactl)
+	if err != nil {
+		return fmt.Errorf("limactl not found in PATH. Please install Lima: https://lima-vm.io/docs/installation/")
+	}
+	return nil
+}
+
+// execLimactl executes a limactl command
+func (m *Manager) execLimactl(ctx context.Context, args ...string) ([]byte, error) {
+	if err := m.findLimactl(); err != nil {
+		return nil, err
+	}
+
+	// #nosec G204 -- args are controlled internally and validated
+	cmd := exec.CommandContext(ctx, m.limactl, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("limactl %s failed: %w\nstderr: %s", strings.Join(args, " "), err, stderr.String())
+	}
+
+	return stdout.Bytes(), nil
 }
 
 // Exists checks if the VM instance exists
 func (m *Manager) Exists() (bool, error) {
-	instances, err := store.Instances()
+	instances, err := m.listInstances()
 	if err != nil {
 		return false, fmt.Errorf("failed to list instances: %w", err)
 	}
 
-	for _, name := range instances {
-		if name == m.instanceName {
+	for _, inst := range instances {
+		if inst.Name == m.instanceName {
 			return true, nil
 		}
 	}
 	return false, nil
 }
 
+// listInstances lists all Lima instances
+func (m *Manager) listInstances() ([]Instance, error) {
+	output, err := m.execLimactl(context.Background(), "list", "--json")
+	if err != nil {
+		return nil, err
+	}
+
+	var instances []Instance
+	if err := json.Unmarshal(output, &instances); err != nil {
+		return nil, fmt.Errorf("failed to parse limactl list output: %w", err)
+	}
+
+	return instances, nil
+}
+
 // IsRunning checks if the VM is currently running
 func (m *Manager) IsRunning() (bool, error) {
-	inst, err := store.Inspect(m.instanceName)
+	inst, err := m.GetInstance()
 	if err != nil {
 		return false, fmt.Errorf("failed to inspect instance: %w", err)
 	}
 
-	return inst.Status == store.StatusRunning, nil
+	return inst.Status == "Running", nil
 }
 
 // GetInstance returns the instance details
-func (m *Manager) GetInstance() (*store.Instance, error) {
-	return store.Inspect(m.instanceName)
+func (m *Manager) GetInstance() (*Instance, error) {
+	instances, err := m.listInstances()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, inst := range instances {
+		if inst.Name == m.instanceName {
+			return &inst, nil
+		}
+	}
+
+	return nil, fmt.Errorf("instance %s not found", m.instanceName)
 }
 
 // Create creates a new Lima VM instance with the embedded configuration
@@ -77,8 +160,19 @@ func (m *Manager) Create(ctx context.Context) error {
 		return fmt.Errorf("failed to get configuration: %w", err)
 	}
 
-	// Create instance
-	_, err = instance.Create(ctx, m.instanceName, []byte(configYAML), false)
+	// Write config to temporary file
+	tmpDir := os.TempDir()
+	configPath := filepath.Join(tmpDir, fmt.Sprintf("llima-box-%s.yaml", m.instanceName))
+	// #nosec G306 -- Temporary config file
+	if err := os.WriteFile(configPath, []byte(configYAML), 0644); err != nil {
+		return fmt.Errorf("failed to write temporary config: %w", err)
+	}
+	defer func() {
+		_ = os.Remove(configPath) // Best effort cleanup
+	}()
+
+	// Create instance with limactl
+	_, err = m.execLimactl(ctx, "create", "--name="+m.instanceName, configPath)
 	if err != nil {
 		return fmt.Errorf("failed to create instance: %w", err)
 	}
@@ -94,14 +188,12 @@ func (m *Manager) Start(ctx context.Context) error {
 	}
 
 	// Check if already running
-	if inst.Status == store.StatusRunning {
+	if inst.Status == "Running" {
 		return nil
 	}
 
 	// Start the instance
-	// Empty string for limactl means use current executable
-	// false means don't run in foreground
-	err = instance.Start(ctx, inst, "", false)
+	_, err = m.execLimactl(ctx, "start", m.instanceName)
 	if err != nil {
 		return fmt.Errorf("failed to start instance: %w", err)
 	}
@@ -111,12 +203,12 @@ func (m *Manager) Start(ctx context.Context) error {
 
 // Stop stops the Lima VM instance gracefully
 func (m *Manager) Stop(ctx context.Context) error {
-	inst, err := m.GetInstance()
+	_, err := m.GetInstance()
 	if err != nil {
 		return fmt.Errorf("failed to get instance: %w", err)
 	}
 
-	err = instance.StopGracefully(ctx, inst, false)
+	_, err = m.execLimactl(ctx, "stop", m.instanceName)
 	if err != nil {
 		return fmt.Errorf("failed to stop instance: %w", err)
 	}
@@ -126,12 +218,17 @@ func (m *Manager) Stop(ctx context.Context) error {
 
 // Delete deletes the Lima VM instance
 func (m *Manager) Delete(ctx context.Context, force bool) error {
-	inst, err := m.GetInstance()
+	_, err := m.GetInstance()
 	if err != nil {
 		return fmt.Errorf("failed to get instance: %w", err)
 	}
 
-	err = instance.Delete(ctx, inst, force)
+	args := []string{"delete", m.instanceName}
+	if force {
+		args = append(args, "--force")
+	}
+
+	_, err = m.execLimactl(ctx, args...)
 	if err != nil {
 		return fmt.Errorf("failed to delete instance: %w", err)
 	}
@@ -171,15 +268,38 @@ func (m *Manager) EnsureRunning(ctx context.Context) error {
 
 // GetConfigPath returns the path to the Lima configuration file
 func (m *Manager) GetConfigPath() (string, error) {
-	limaDir := store.Directory()
-	configPath := filepath.Join(limaDir, m.instanceName, "lima.yaml")
+	inst, err := m.GetInstance()
+	if err != nil {
+		return "", err
+	}
+	configPath := filepath.Join(inst.Dir, "lima.yaml")
 	return configPath, nil
+}
+
+// GetLimaHome returns the Lima home directory
+func (m *Manager) GetLimaHome() (string, error) {
+	// Check LIMA_HOME environment variable
+	if limaHome := os.Getenv("LIMA_HOME"); limaHome != "" {
+		return limaHome, nil
+	}
+
+	// Default to ~/.lima
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get home directory: %w", err)
+	}
+
+	return filepath.Join(homeDir, ".lima"), nil
 }
 
 // WriteDefaultConfig writes the default configuration to disk
 func (m *Manager) WriteDefaultConfig() error {
-	limaDir := store.Directory()
-	instanceDir := filepath.Join(limaDir, m.instanceName)
+	limaHome, err := m.GetLimaHome()
+	if err != nil {
+		return err
+	}
+
+	instanceDir := filepath.Join(limaHome, m.instanceName)
 
 	// #nosec G301 -- Standard permissions for Lima instance directories
 	if err := os.MkdirAll(instanceDir, 0755); err != nil {

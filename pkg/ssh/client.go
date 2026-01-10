@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/lima-vm/lima/pkg/store"
+	"github.com/middlendian/llima-box/pkg/vm"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/term"
 )
@@ -17,7 +17,7 @@ import (
 // Client wraps SSH connection to a Lima VM instance
 type Client struct {
 	instanceName string
-	instance     *store.Instance
+	instance     *vm.Instance
 	sshConfig    *ssh.ClientConfig
 	client       *ssh.Client
 }
@@ -28,14 +28,15 @@ func NewClient(instanceName string) (*Client, error) {
 		return nil, fmt.Errorf("instance name cannot be empty")
 	}
 
-	// Get instance details
-	inst, err := store.Inspect(instanceName)
+	// Get instance details using VM manager
+	vmManager := vm.NewManager(instanceName)
+	inst, err := vmManager.GetInstance()
 	if err != nil {
 		return nil, fmt.Errorf("failed to inspect instance %s: %w", instanceName, err)
 	}
 
 	// Check if instance is running
-	if inst.Status != store.StatusRunning {
+	if inst.Status != "Running" {
 		return nil, fmt.Errorf("instance %s is not running (status: %s)", instanceName, inst.Status)
 	}
 
@@ -58,9 +59,13 @@ func (c *Client) Connect() error {
 	}
 
 	// Get SSH key paths - Lima stores keys in $LIMA_HOME/_config/
-	limaDir := store.Directory()
+	vmManager := vm.NewManager(c.instanceName)
+	limaHome, err := vmManager.GetLimaHome()
+	if err != nil {
+		return fmt.Errorf("failed to get Lima home: %w", err)
+	}
 	keyPaths := []string{
-		filepath.Join(limaDir, "_config", "user"),
+		filepath.Join(limaHome, "_config", "user"),
 		filepath.Join(c.instance.Dir, "ssh_key"),
 	}
 
@@ -93,10 +98,7 @@ func (c *Client) Connect() error {
 	}
 
 	// Connect to SSH using instance hostname and port
-	host := c.instance.Hostname
-	if host == "" {
-		host = "127.0.0.1"
-	}
+	host := "127.0.0.1" // Lima VMs always use localhost
 	port := c.instance.SSHLocalPort
 	if port == 0 {
 		port = 22

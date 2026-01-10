@@ -32,14 +32,24 @@ Lima provides all of these capabilities natively, while Docker would require com
 4. **Performance**: Fast startup and execution
 5. **Concurrency**: Built-in support for managing multiple environments
 
-### Lima Package Usage
+### Lima Integration
 
-We use Lima's Go packages directly:
-- `github.com/lima-vm/lima/v2/pkg/store`: VM instance management
-- `github.com/lima-vm/lima/v2/pkg/limayaml`: Configuration handling
-- `github.com/lima-vm/lima/v2/pkg/sshutil`: SSH connection management
+We wrap the `limactl` CLI tool for VM management:
+- **VM lifecycle**: Create, start, stop, delete operations via `limactl` commands
+- **Instance inspection**: Parse JSON output from `limactl list --json`
+- **Configuration**: Embed Lima YAML config and pass to `limactl create`
 
-This allows us to manage VMs programmatically without shelling out to `limactl`.
+**Why CLI wrapper instead of Go library?**
+
+Initially we explored using Lima's Go packages directly (`pkg/store`, `pkg/instance`), but the CLI wrapper approach offers significant advantages:
+
+1. **Simpler builds**: No CGO dependency required (Lima library needs CGO for VZ support on macOS)
+2. **Smaller binaries**: Avoids embedding Lima library and 60+ transitive dependencies
+3. **Better compatibility**: Delegates platform-specific VM handling to `limactl`
+4. **More maintainable**: Clearer separation between llima-box and Lima internals
+5. **Already required**: Users need Lima installed anyway
+
+The wrapper approach provides the same functionality with better reliability and simpler deployment.
 
 ## Environment Naming
 

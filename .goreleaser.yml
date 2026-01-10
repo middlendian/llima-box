@@ -54,7 +54,7 @@ archives:
       {{- else }}{{ .Arch }}{{ end }}
 
     # Format
-    format: tar.gz
+    formats: [ 'tar.gz' ]
 
     # mise-compatible structure with bin/ subdirectory
     # This creates: llima-box-{os}-{arch}/bin/llima-box
@@ -71,7 +71,7 @@ checksum:
   algorithm: sha256
 
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   # Disable git-based changelog since we're using CHANGELOG.md

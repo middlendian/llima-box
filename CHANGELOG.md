@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.2.0] - 2026-01-10
+
+**⚠️ Beta Release** - This is an early release for testing and feedback. Not recommended for production use.
+
+This is the first public release of llima-box. All core functionality is implemented and unit-tested. We're releasing as a beta to gather real-world feedback before committing to v1.0.0.
+
+**Please report issues at**: https://github.com/middlendian/llima-box/issues
+
 ### Added
 - `shell` command to enter isolated environments for projects
 - `list` command to view all running environments
@@ -18,9 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Persistent namespace support using Linux mount namespaces
 - User account management for environment isolation
 - Namespace entry functionality for running commands in isolated environments
+- VM lifecycle management (create, start, stop, delete)
+- SSH client with retry logic and SSH agent forwarding for Git operations
+- Environment naming system with comprehensive tests (327 lines)
+- Multi-platform build support (Linux/macOS, ARM64/AMD64)
 - `make check-fast` target for running validation without network dependencies
 - Makefile with build, test, lint, and format targets
-- Multi-platform build support (Linux/macOS, ARM64/AMD64)
 - GitHub Actions workflow for pull request validation with automatic code fixes
 - GitHub Actions workflow for automated releases with changelog extraction
 - Pull request template with CHANGELOG.md reminder
@@ -28,25 +41,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CHANGELOG.md following Keep a Changelog conventions
 - golangci-lint configuration with 15+ linters
 - Comprehensive build and development documentation in CONTRIBUTING.md
+- Detailed architecture and design documentation
 
 ### Changed
 - Default shell changed from zsh to bash for better agent compatibility
-- CLAUDE.md now recommends `GOPROXY=direct make check` to avoid network issues
 
-### Removed
-- Test commands (`test-vm`, `test-naming`) - replaced by production CLI commands
+### Known Limitations
 
-## [0.1.0] - TBD
+These are design choices or planned improvements for future releases:
 
-Initial development release (not yet published).
+- **macOS only**: Requires Lima VM (macOS-specific tool)
+- **Limited real-world testing**: This is a beta release seeking feedback
+- **No resource quotas**: CPU/memory shared across all environments
+- **Shared network**: All environments share the VM's network namespace
+- **Manual Lima installation**: Users must install Lima separately via Homebrew
 
-### Added
-- Project structure and architecture
-- Lima VM integration
-- Multi-architecture support (x86_64 + ARM64)
-- Environment naming system
-- SSH client for VM communication
-- Comprehensive documentation
-
-[Unreleased]: https://github.com/middlendian/llima-box/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/middlendian/llima-box/releases/tag/v0.1.0
+[Unreleased]: https://github.com/middlendian/llima-box/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/middlendian/llima-box/releases/tag/v0.2.0

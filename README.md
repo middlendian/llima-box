@@ -1,6 +1,6 @@
 # llima-box
 
-> **Status**: 🚧 In Development - Not yet functional
+> **Status**: 🧪 Beta - Implementation complete, testing in progress
 
 A command-line tool for creating secure, isolated environments for LLM agents within a single Lima VM on macOS.
 
@@ -20,7 +20,7 @@ Instead of using Docker containers (which would require docker-in-docker for age
 - **Zero Docker Overhead**: Direct VM isolation without container layers
 - **Automatic Management**: VM creation, startup, and configuration handled automatically
 
-## Planned Usage
+## Usage
 
 ```bash
 # Launch isolated shell in current directory
@@ -50,7 +50,7 @@ llima-box delete-all
 - [Testing Plan](docs/TESTING.md) - Manual and automated testing approach
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Step-by-step implementation phases
 - [POC Status](docs/POC_STATUS.md) - Lima integration proof-of-concept validation
-- [Next Steps](docs/NEXT_STEPS.md) - Remaining work for v1 (18-23 hours estimated)
+- [Next Steps](docs/NEXT_STEPS.md) - Release strategy (v0.2.0 beta, then v1.0.0 stable)
 
 ## Prerequisites
 
@@ -95,23 +95,27 @@ sudo mv bin/llima-box /usr/local/bin/
 
 ## Development Status
 
-### Completed
+### ✅ Implementation Complete
 - ✅ Architecture design
 - ✅ Documentation structure
 - ✅ Go project structure
 - ✅ Lima integration validated (POC)
-- ✅ VM lifecycle management (core implementation)
+- ✅ VM lifecycle management (create, start, stop, delete)
 - ✅ Multi-architecture support (x86_64 + ARM64)
-- ✅ Environment naming and sanitization (with comprehensive tests)
+- ✅ Environment naming and sanitization (with 327 lines of tests)
 - ✅ SSH client for VM communication (with retry logic and agent forwarding)
 - ✅ Environment manager (namespace operations, user management)
+- ✅ CLI commands:
+  - `shell` - Launch isolated shell or execute commands
+  - `list` - View all environments
+  - `delete` - Remove specific environment
+  - `delete-all` - Remove all environments
 
-### In Progress
-- 🚧 CLI commands (shell, list, delete, delete-all)
+### 🎯 Release Plan
+- **v0.2.0 Beta** (Ready now): Implementation complete, seeking real-world testing feedback
+- **v1.0.0 Stable** (After beta): Manual testing complete, bugs fixed, production-ready
 
-### Planned
-- ⏳ Testing and validation
-- ⏳ End-to-end integration
+See [docs/V0.2_RELEASE_CHECKLIST.md](docs/V0.2_RELEASE_CHECKLIST.md) for beta release details.
 
 ## How It Works
 

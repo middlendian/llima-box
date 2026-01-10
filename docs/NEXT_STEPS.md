@@ -52,90 +52,92 @@ func (m *Manager) Delete(envName string) error
 func (m *Manager) EnterNamespace(env *Environment, cmd []string) error
 ```
 
-### Phase 5: CLI Commands (4-5 hours)
+### Phase 5: CLI Commands ✅ COMPLETE
 
 **Location**: `internal/cli/`
 
 **Tasks**:
 
-#### `shell` Command
-- [ ] Parse project path (default: current directory)
-- [ ] Parse command to execute (default: zsh)
-- [ ] Ensure VM is running
-- [ ] Create environment if needed
-- [ ] Enter namespace
-- [ ] Execute command (interactive or non-interactive)
+#### `shell` Command ✅
+- [x] Parse project path (default: current directory)
+- [x] Parse command to execute (default: bash)
+- [x] Ensure VM is running
+- [x] Create environment if needed
+- [x] Enter namespace
+- [x] Execute command (interactive or non-interactive)
 
-#### `list` Command
-- [ ] Connect to VM
-- [ ] Query all user accounts
-- [ ] Filter system users
-- [ ] Format output as table
-- [ ] Show environment name and project path
+#### `list` Command ✅
+- [x] Connect to VM
+- [x] Query all user accounts
+- [x] Filter system users
+- [x] Format output as table
+- [x] Show environment name and project path
 
-#### `delete` Command
-- [ ] Parse project path
-- [ ] Generate environment name
-- [ ] Prompt for confirmation
-- [ ] Kill namespace processes
-- [ ] Delete user account
-- [ ] Clean up namespace file
+#### `delete` Command ✅
+- [x] Parse project path
+- [x] Generate environment name
+- [x] Prompt for confirmation (with --force flag)
+- [x] Kill namespace processes
+- [x] Delete user account
+- [x] Clean up namespace file
 
-#### `delete-all` Command
-- [ ] List all environments
-- [ ] Show count and names
-- [ ] Prompt for confirmation
-- [ ] Delete each environment
-- [ ] Report success/failures
+#### `delete-all` Command ✅
+- [x] List all environments
+- [x] Show count and names
+- [x] Prompt for confirmation
+- [x] Delete each environment
+- [x] Report success/failures
 
-### Phase 6: Polish & Error Handling (2-3 hours)
-
-**Tasks**:
-- [ ] Clear, actionable error messages
-- [ ] Auto-recovery for common issues
-- [ ] Progress indicators for slow operations
-- [ ] Help text and usage examples
-- [ ] Handle edge cases (invalid paths, corrupted state)
-- [ ] Logging for debugging
-
-### Phase 7: Testing (3-4 hours)
+### Phase 6: Polish & Error Handling ✅ MOSTLY COMPLETE
 
 **Tasks**:
-- [ ] Unit tests for environment naming
-- [ ] Unit tests for path sanitization
-- [ ] Manual test scenario 1: First-time setup
-- [ ] Manual test scenario 2: Multiple shells
-- [ ] Manual test scenario 3: Project isolation
-- [ ] Manual test scenario 4-11: (See docs/TESTING.md)
+- [x] Clear, actionable error messages
+- [x] Auto-recovery for common issues (VM auto-start, retry logic)
+- [x] Progress indicators for slow operations
+- [x] Help text and usage examples
+- [x] Handle edge cases (invalid paths, corrupted state)
+- [ ] End-to-end validation on macOS + Lima (requires manual testing)
+
+### Phase 7: Testing ⏳ IN PROGRESS
+
+**Tasks**:
+- [x] Unit tests for environment naming (327 lines in `pkg/env/naming_test.go`)
+- [x] Unit tests for SSH client (258 lines in `pkg/ssh/client_test.go`)
+- [x] Unit tests for environment manager (95 lines in `pkg/env/manager_test.go`)
+- [ ] Manual test scenario 1: First-time setup (requires macOS)
+- [ ] Manual test scenario 2: Multiple shells (requires macOS)
+- [ ] Manual test scenario 3: Project isolation (requires macOS)
+- [ ] Manual test scenarios 4-14: (See docs/TESTING.md)
 - [ ] Document test results
 - [ ] Fix bugs found during testing
 
 ## Estimated Timeline
 
-**Total Completed**: ~5-6 hours (Phases 1-3)
-**Total Remaining**: ~13-17 hours of development
+**Total Completed**: ~18-20 hours (Phases 1-6)
+**Total Remaining**: ~2-4 hours of testing and validation
 
 **Breakdown**:
+- ✅ Foundation: 1-2 hours (DONE)
 - ✅ Environment Naming: 2-3 hours (DONE)
 - ✅ SSH Client: 2-3 hours (DONE)
-- ⏳ Environment Manager: 4-5 hours (NEXT)
-- ⏳ CLI Commands: 4-5 hours
-- ⏳ Polish: 2-3 hours
-- ⏳ Testing: 3-4 hours
+- ✅ Environment Manager: 4-5 hours (DONE)
+- ✅ CLI Commands: 4-5 hours (DONE)
+- ✅ Polish: 2-3 hours (DONE)
+- ⏳ Testing: 2-4 hours (manual testing on macOS remains)
 
 ## Success Criteria
 
 v1 is complete when:
 
-1. ✅ All four commands work (`shell`, `list`, `delete`, `delete-all`)
+1. ✅ All four commands implemented (`shell`, `list`, `delete`, `delete-all`)
 2. ✅ VM is created and managed automatically
-3. ✅ Environments are properly isolated
-4. ✅ Multiple shells can share the same environment
-5. ✅ Path preservation works correctly
+3. ✅ Environments are properly isolated (implementation complete)
+4. ✅ Multiple shells can share the same environment (implementation complete)
+5. ✅ Path preservation works correctly (implementation complete)
 6. ✅ SSH agent forwarding works for Git
-7. ✅ Manual test suite passes (all 14 scenarios)
+7. ⏳ Manual test suite passes (all 14 scenarios) - **requires macOS testing**
 8. ✅ Error messages are clear and actionable
-9. ✅ README reflects actual functionality
+9. ⏳ README reflects actual functionality - **needs update**
 
 ## Beyond v1
 
@@ -151,14 +153,26 @@ Ideas for future versions (not blocking v1):
 - **Snapshots**: Save/restore environment state
 - **Templates**: Pre-configured environment templates
 
-## Getting Started
+## What's Left for v1 Release
 
-To continue development:
+Implementation is ~95% complete. Remaining work:
 
-1. **Next Phase**: Phase 4 (Environment Manager) - namespace operations and user management
-2. **Reference**: See `docs/IMPLEMENTATION_PLAN.md` for detailed specs
-3. **Testing**: See `docs/TESTING.md` for manual testing procedures
-4. **Documentation**: Update README.md and docs as features are implemented
+1. **Manual Testing on macOS**: Run all 14 test scenarios from `docs/TESTING.md`
+   - Requires macOS system with Lima installed
+   - Validates end-to-end integration
+   - Identifies any runtime issues not caught in unit tests
+
+2. **Documentation Updates**:
+   - Update README.md status from "In Development" to "Beta" or "v1.0"
+   - Verify all usage examples match actual implementation
+   - Update installation instructions if needed
+
+3. **Bug Fixes**: Address any issues found during manual testing
+
+4. **Release Preparation**:
+   - Update CHANGELOG.md with v1.0.0 section
+   - Create release tag
+   - Build and publish binaries for all platforms
 
 ## Questions?
 

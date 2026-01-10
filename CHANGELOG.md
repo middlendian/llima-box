@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Release process now uses GoReleaser for automated builds and releases
+
 ## [0.2.0] - 2026-01-10
 
 **⚠️ Beta Release** - This is an early release for testing and feedback. Not recommended for production use.

@@ -1,0 +1,165 @@
+# GoReleaser configuration for llima-box
+# See https://goreleaser.com for documentation
+
+version: 2
+
+before:
+  hooks:
+    # Ensure dependencies are up to date
+    - go mod tidy
+    # Run tests before building
+    - go test ./...
+
+builds:
+  - id: llima-box
+    main: ./cmd/llima-box
+    binary: llima-box
+
+    # Build flags
+    ldflags:
+      - -s -w
+      - -X main.Version={{ .Version }}
+      - -X main.Commit={{ .Commit }}
+      - -X main.BuildTime={{ .Date }}
+
+    env:
+      - CGO_ENABLED=0
+
+    # Target platforms matching current setup
+    goos:
+      - linux
+      - darwin
+
+    goarch:
+      - amd64
+      - arm64
+
+    # No Windows support (macOS-focused tool)
+    ignore:
+      - goos: windows
+
+archives:
+  - id: llima-box-archives
+
+    # mise-compatible naming: llima-box-{os}-{arch}
+    # GoReleaser uses 'darwin' for macOS, we'll rename in name_template
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- if eq .Os "darwin" }}macos
+      {{- else }}{{ .Os }}{{ end }}-
+      {{- if eq .Arch "amd64" }}x64
+      {{- else if eq .Arch "arm64" }}arm64
+      {{- else }}{{ .Arch }}{{ end }}
+
+    # Format
+    format: tar.gz
+
+    # mise-compatible structure with bin/ subdirectory
+    # This creates: llima-box-{os}-{arch}/bin/llima-box
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+    # Ensure binary goes into bin/ subdirectory
+    wrap_in_directory: true
+
+    # Set executable permissions
+    rlcp: true
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  # Extract changelog from CHANGELOG.md
+  use: github-native
+
+  # We'll use release notes template to extract from CHANGELOG.md
+  skip: false
+
+release:
+  # Release to GitHub
+  github:
+    owner: middlendian
+    name: llima-box
+
+  # Don't create draft releases
+  draft: false
+
+  # Don't mark as prerelease automatically
+  prerelease: auto
+
+  # Release notes
+  header: |
+    ## Installation
+
+    ### Using mise (recommended)
+
+    The easiest way to install llima-box is using [mise](https://mise.jdx.dev):
+    ```bash
+    mise use -g github:middlendian/llima-box
+    ```
+
+    ### Manual Installation
+
+    Download the appropriate binary for your platform and add it to your PATH:
+
+    #### macOS ARM64 (Apple Silicon)
+    ```bash
+    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-macos-arm64.tar.gz
+    tar -xzf llima-box-macos-arm64.tar.gz
+    sudo mv llima-box-macos-arm64/bin/llima-box /usr/local/bin/
+    ```
+
+    #### macOS x64 (Intel)
+    ```bash
+    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-macos-x64.tar.gz
+    tar -xzf llima-box-macos-x64.tar.gz
+    sudo mv llima-box-macos-x64/bin/llima-box /usr/local/bin/
+    ```
+
+    #### Linux ARM64
+    ```bash
+    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-linux-arm64.tar.gz
+    tar -xzf llima-box-linux-arm64.tar.gz
+    sudo mv llima-box-linux-arm64/bin/llima-box /usr/local/bin/
+    ```
+
+    #### Linux x64
+    ```bash
+    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/llima-box-linux-x64.tar.gz
+    tar -xzf llima-box-linux-x64.tar.gz
+    sudo mv llima-box-linux-x64/bin/llima-box /usr/local/bin/
+    ```
+
+    ## Verify Checksums
+
+    Download checksums.txt and verify your download:
+    ```bash
+    curl -LO https://github.com/middlendian/llima-box/releases/download/{{ .Tag }}/checksums.txt
+    sha256sum -c checksums.txt
+    ```
+
+  # Footer with changelog note - will be appended after the changelog section
+  footer: |
+    ---
+
+    For more details, see the [CHANGELOG.md](https://github.com/middlendian/llima-box/blob/main/CHANGELOG.md).
+
+  # Include additional files in the release
+  extra_files:
+    - glob: ./LICENSE
+    - glob: ./README.md
+    - glob: ./CHANGELOG.md
+
+# Announce releases (can be extended with Twitter, Slack, etc.)
+announce:
+  skip: true
+
+# Metadata
+metadata:
+  mod_timestamp: '{{ .CommitTimestamp }}'

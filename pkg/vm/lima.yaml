@@ -13,8 +13,6 @@ disk: "100GiB"
 mounts:
 - location: "~"
   writable: true
-- location: "/tmp/lima"
-  writable: true
 
 ssh:
   localPort: 60022

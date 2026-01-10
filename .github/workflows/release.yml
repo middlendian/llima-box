@@ -21,10 +21,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            name/app
+          flavor: |
+            latest=false
+            prefix=
+            suffix=
           tags: |
-            type=semver,pattern={{version}}
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}},,event=tag
 
       - name: Set up Go
         uses: actions/setup-go@v5

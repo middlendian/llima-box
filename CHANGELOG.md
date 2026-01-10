@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `shell` command to enter isolated environments for projects
+- `list` command to view all running environments
+- `delete` command to remove individual environments
+- `delete-all` command to remove all environments at once
+- Interactive confirmation prompts for destructive operations
+- Automatic VM creation and startup when needed
 - Environment manager for creating, listing, and deleting isolated environments
 - Persistent namespace support using Linux mount namespaces
 - User account management for environment isolation
@@ -22,6 +28,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CHANGELOG.md following Keep a Changelog conventions
 - golangci-lint configuration with 15+ linters
 - Comprehensive build and development documentation in CONTRIBUTING.md
+
+### Changed
+- Default shell changed from zsh to bash for better agent compatibility
+- CLAUDE.md now recommends `GOPROXY=direct make check` to avoid network issues
+
+### Removed
+- Test commands (`test-vm`, `test-naming`) - replaced by production CLI commands
 
 ## [0.1.0] - TBD
 

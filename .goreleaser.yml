@@ -66,9 +66,6 @@ archives:
     # Ensure binary goes into bin/ subdirectory
     wrap_in_directory: true
 
-    # Set executable permissions
-    rlcp: true
-
 checksum:
   name_template: 'checksums.txt'
   algorithm: sha256
@@ -94,25 +91,13 @@ release:
 
   # Release notes
   header: |
-    ## Installation
-
     See the [Installation section in the README](https://github.com/middlendian/llima-box#installation) for detailed instructions.
-
-    **Quick start with mise (recommended):**
-    ```bash
-    mise use -g github:middlendian/llima-box
-    ```
-
-    **Download binaries below** ↓ or see README for platform-specific manual installation steps.
 
   # Footer pointing to full changelog
   footer: |
     ---
 
     **Full changelog**: [CHANGELOG.md](https://github.com/middlendian/llima-box/blob/main/CHANGELOG.md)
-
-  # Use extracted changelog from CHANGELOG.md
-  release_notes_file: .release-notes.md
 
   # Include additional files in the release
   extra_files:

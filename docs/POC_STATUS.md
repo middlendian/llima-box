@@ -2,11 +2,13 @@
 
 > **Update (January 2026)**: The POC phase is complete and validated. We have now progressed beyond the POC to implement production components. See [NEXT_STEPS.md](NEXT_STEPS.md) for current progress.
 
+> **Implementation Note**: While this POC validated using Lima's Go library directly, the production implementation uses a CLI wrapper around `limactl` instead. This provides simpler builds (no CGO), smaller binaries, and better compatibility. See [DESIGN.md](DESIGN.md#lima-integration) for the rationale.
+
 ## Lima Integration Validation ✅
 
 We've successfully created a proof-of-concept VM manager that uses Lima's Go packages directly, following the same patterns used by `limactl`.
 
-**POC Status**: Complete and validated. The approach works as designed.
+**POC Status**: Complete and validated. The library approach works, but we chose CLI wrapper for production.
 
 ## What We Built
 

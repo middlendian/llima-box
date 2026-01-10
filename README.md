@@ -6,9 +6,13 @@ A command-line tool for creating secure, isolated environments for LLM agents wi
 
 ## What is llima-box?
 
-`llima-box` solves the challenge of running multiple LLM agents securely on the same macOS system. Each agent operates in complete filesystem isolation while sharing CPU and memory resources, with preserved host path structures for seamless development workflows.
+`llima-box` solves the challenge of running multiple LLM agents securely on the same macOS system. Each agent operates
+in complete filesystem isolation while sharing CPU and memory resources, with preserved host path structures for
+seamless development workflows.
 
-Instead of using Docker containers (which would require docker-in-docker for agents that need Docker access), llima-box leverages Lima VMs with Linux mount namespaces to provide robust isolation while maintaining familiar development environments.
+Instead of using Docker containers (which would require docker-in-docker for agents that need Docker access), llima-box
+leverages a Lima VM with Linux mount namespaces to provide robust isolation while maintaining familiar development
+environments.
 
 ## Key Features
 
@@ -50,7 +54,8 @@ llima-box delete-all
 - [Testing Plan](docs/TESTING.md) - Manual and automated testing approach
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Step-by-step implementation phases
 - [POC Status](docs/POC_STATUS.md) - Lima integration proof-of-concept validation
-- [Next Steps](docs/NEXT_STEPS.md) - Release strategy (v0.2.0 beta, then v1.0.0 stable)
+- [Next Steps](docs/NEXT_STEPS.md) - Completed and planned work
+- [Release Checklist](./docs/RELEASE_CHECKLIST.md) -
 
 ## Prerequisites
 
@@ -71,9 +76,11 @@ This automatically downloads and installs the correct version for your platform.
 
 ### Manual Installation
 
-Download the latest release for your platform from the [releases page](https://github.com/middlendian/llima-box/releases).
+Download the latest release for your platform from
+the [releases page](https://github.com/middlendian/llima-box/releases).
 
 **macOS ARM64 (Apple Silicon):**
+
 ```bash
 curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-macos-arm64.tar.gz
 tar -xzf llima-box-macos-arm64.tar.gz
@@ -81,6 +88,7 @@ sudo mv llima-box-macos-arm64/bin/llima-box /usr/local/bin/
 ```
 
 **macOS x64 (Intel):**
+
 ```bash
 curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-macos-x64.tar.gz
 tar -xzf llima-box-macos-x64.tar.gz
@@ -94,6 +102,7 @@ go install github.com/middlendian/llima-box@latest
 ```
 
 Or clone and build:
+
 ```bash
 git clone https://github.com/middlendian/llima-box.git
 cd llima-box
@@ -101,29 +110,9 @@ make build
 sudo mv bin/llima-box /usr/local/bin/
 ```
 
-## Development Status
+## Development Status: Beta
 
-### ✅ Implementation Complete
-- ✅ Architecture design
-- ✅ Documentation structure
-- ✅ Go project structure
-- ✅ Lima integration validated (POC)
-- ✅ VM lifecycle management (create, start, stop, delete)
-- ✅ Multi-architecture support (x86_64 + ARM64)
-- ✅ Environment naming and sanitization (with 327 lines of tests)
-- ✅ SSH client for VM communication (with retry logic and agent forwarding)
-- ✅ Environment manager (namespace operations, user management)
-- ✅ CLI commands:
-  - `shell` - Launch isolated shell or execute commands
-  - `list` - View all environments
-  - `delete` - Remove specific environment
-  - `delete-all` - Remove all environments
-
-### 🎯 Release Plan
-- **v0.2.0 Beta** (Ready now): Implementation complete, seeking real-world testing feedback
-- **v1.0.0 Stable** (After beta): Manual testing complete, bugs fixed, production-ready
-
-See [docs/V0.2_RELEASE_CHECKLIST.md](docs/V0.2_RELEASE_CHECKLIST.md) for beta release details.
+We're working on real-world testing and validation before a v1.0.0 release.
 
 ## How It Works
 
@@ -139,15 +128,20 @@ See [Architecture](docs/ARCHITECTURE.md) for detailed technical design.
 
 ## Security Model
 
-**Isolates:**
-- ✅ Filesystem access (per-project isolation)
-- ✅ User permissions (separate accounts)
+For each project, llima-box sets up an isolated user and namespace within a single shared VM.
 
-**Shares:**
-- ⚠️ Network (all environments share VM network)
-- ⚠️ CPU/Memory (no resource quotas)
+**Isolated:**
 
-llima-box is designed for development environments, not for running untrusted code. See [Architecture](docs/ARCHITECTURE.md#security-model) for threat model details.
+- Filesystem access (per-project isolation)
+- User permissions (separate accounts)
+
+**Shared:**
+
+- Network (all environments share VM network)
+- CPU/Memory (no resource quotas)
+
+llima-box is designed for development environments, not for running untrusted code.
+See [Architecture](docs/ARCHITECTURE.md#security-model) for threat model details.
 
 ## Development
 
@@ -186,85 +180,9 @@ make clean
 make help
 ```
 
-### Project Structure
-
-```
-llima-box/
-├── cmd/
-│   └── llima-box/      # Main application entry point
-├── pkg/
-│   ├── env/            # Environment naming and sanitization
-│   ├── ssh/            # SSH client for VM communication
-│   └── vm/             # VM lifecycle management
-├── docs/               # Documentation
-├── .github/
-│   └── workflows/      # CI/CD workflows
-├── Makefile            # Build automation
-└── .golangci.yml       # Linter configuration
-```
-
-### Running Tests
-
-```bash
-# Run all tests
-make test
-
-# Run tests with race detector and coverage
-go test -v -race -coverprofile=coverage.out ./...
-
-# View coverage report
-go tool cover -html=coverage.out
-```
-
-### Code Quality
-
-Before submitting a PR, ensure your code passes all checks:
-
-```bash
-make check
-```
-
-This will:
-1. Check code formatting
-2. Run `go vet`
-3. Run golangci-lint
-4. Run all tests
-
-### Continuous Integration
-
-The project uses GitHub Actions for CI/CD:
-
-- **Pull Requests**: Automatically run tests, linting, and build checks on all PRs
-- **Releases**: Automatically build and publish binaries for all platforms when a version tag is pushed
-
-Release notes are extracted from [CHANGELOG.md](CHANGELOG.md), which follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) conventions.
-
-To create a new release:
-```bash
-# 1. Update CHANGELOG.md with version and date
-# 2. Commit the changelog
-git add CHANGELOG.md
-git commit -m "Prepare release v1.0.0"
-git push origin main
-
-# 3. Create and push the tag
-git tag -a v1.0.0 -m "Release v1.0.0"
-git push origin v1.0.0
-```
-
 ## Contributing
 
 This project is in early development. Contributions welcome once the core implementation is complete.
-
-### Contribution Guidelines
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run `make check` to ensure code quality
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
 
 ## License
 

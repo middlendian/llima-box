@@ -1,10 +1,10 @@
-# v0.2.0 Release Checklist
+# Release Checklist
 
-This document outlines the steps required to release llima-box v0.2.0 as a **beta release** for real-world testing.
+This document outlines the steps required to release llima-box.
 
 ## Release Strategy
 
-**v0.2.0** is a beta release to:
+**v0.x.x** are beta releases to:
 - Get the implementation in users' hands for real-world testing
 - Gather feedback and discover edge cases
 - Validate the architecture and design choices
@@ -20,7 +20,7 @@ This document outlines the steps required to release llima-box v0.2.0 as a **bet
 
 All core functionality is implemented and unit-tested. Code quality checks pass (when network is available). Ready to release for early adopters.
 
-## v0.2.0 Release Checklist
+## Release Checklist
 
 ### 1. Code Quality ✅
 

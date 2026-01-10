@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0]
+
 ### Changed
 
 - Refactored VM management to use `limactl` CLI instead of Lima Go library for better compatibility
@@ -17,7 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VM creation errors related to VZ driver and guest agent binary discovery
 - Warning about non-existent `/tmp/lima` mount path
 
-## [0.2.1]
+## [0.2.2]
 
 ### Changed
 

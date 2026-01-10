@@ -1,7 +1,6 @@
 name: Release
 
 on:
-  pull_request:
   push:
     tags:
       - 'v*.*.*'
@@ -26,9 +25,7 @@ jobs:
             prefix=
             suffix=
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}},,event=tag
+            type=semver,pattern={{version}},event=tag
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -39,28 +36,27 @@ jobs:
       - name: Format release notes
         shell: bash
         run: |
-          # Extract version number and remove 'v' prefix if present
-            VERSION="${{ steps.meta.outputs.tag-names }}"
+          VERSION="${{ steps.meta.outputs.tag-names }}"
             
-            # Extract release notes from CHANGELOG.md for the specified version
-            awk "
+          # Extract release notes from CHANGELOG.md for the specified version
+          awk "
             /^## \[$VERSION\]/,/^## \[/ {
-            # Skip the first header line
-            if (/^## \[/ && !found) {
-            found=1
-            next
-          }
-          
-          # Exit when we hit the next version header
-            if (/^## \[/ && found) {
-            exit
-          }
-          
-          # Print lines between the two headers
-            if (found) {
-            print
-          }
-          }
+              # Skip the first header line
+              if (/^## \[/ && !found) {
+                found=1
+                next
+              }
+              
+              # Exit when we hit the next version header
+              if (/^## \[/ && found) {
+                exit
+              }
+              
+              # Print lines between the two headers
+              if (found) {
+                print
+              }
+            }
           " CHANGELOG.md > .release-notes.md
 
       - name: Run GoReleaser

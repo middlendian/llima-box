@@ -115,11 +115,11 @@ func parseShellArgs(args []string) (string, []string, error) {
 				return "", nil, fmt.Errorf("failed to get current directory: %w", err)
 			}
 			projectPath = cwd
-			command = []string{"zsh"}
+			command = []string{"bash"}
 		} else {
 			// One arg: treat as path, use default shell
 			projectPath = args[0]
-			command = []string{"zsh"}
+			command = []string{"bash"}
 		}
 	} else {
 		// Has "--" separator

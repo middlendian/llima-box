@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/middlendian/llima-box/internal/cli"
 	"github.com/middlendian/llima-box/pkg/env"
 	"github.com/middlendian/llima-box/pkg/vm"
 	"github.com/spf13/cobra"
@@ -16,20 +17,30 @@ var rootCmd = &cobra.Command{
 	Short: "Secure multi-agent environment manager using Lima VMs",
 	Long: `llima-box creates isolated environments for LLM agents using Lima VMs
 and Linux mount namespaces. Each agent gets complete filesystem isolation
-while sharing VM resources.`,
+while sharing VM resources.
+
+Commands:
+  shell       Enter an isolated environment shell
+  list        List all environments
+  delete      Delete an environment
+  delete-all  Delete all environments
+
+Use "llima-box <command> --help" for more information about a command.`,
 }
 
 var testVMCmd = &cobra.Command{
-	Use:   "test-vm",
-	Short: "Test VM management (proof of concept)",
-	Run:   runTestVM,
+	Use:    "test-vm",
+	Short:  "Test VM management (proof of concept)",
+	Run:    runTestVM,
+	Hidden: true, // Hide from main help
 }
 
 var testNamingCmd = &cobra.Command{
-	Use:   "test-naming [path]",
-	Short: "Test environment naming (generate name from path)",
-	Args:  cobra.MaximumNArgs(1),
-	Run:   runTestNaming,
+	Use:    "test-naming [path]",
+	Short:  "Test environment naming (generate name from path)",
+	Args:   cobra.MaximumNArgs(1),
+	Run:    runTestNaming,
+	Hidden: true, // Hide from main help
 }
 
 func runTestVM(_ *cobra.Command, _ []string) {
@@ -115,6 +126,13 @@ func runTestNaming(_ *cobra.Command, args []string) {
 }
 
 func init() {
+	// Add production commands
+	rootCmd.AddCommand(cli.NewShellCommand())
+	rootCmd.AddCommand(cli.NewListCommand())
+	rootCmd.AddCommand(cli.NewDeleteCommand())
+	rootCmd.AddCommand(cli.NewDeleteAllCommand())
+
+	// Add test commands (hidden)
 	rootCmd.AddCommand(testVMCmd)
 	rootCmd.AddCommand(testNamingCmd)
 }

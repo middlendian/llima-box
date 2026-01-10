@@ -1,0 +1,129 @@
+# GoReleaser configuration for llima-box
+# See https://goreleaser.com for documentation
+
+version: 2
+
+before:
+  hooks:
+    # Ensure dependencies are up to date
+    - go mod tidy
+    # Run tests before building
+    - go test ./...
+    # Extract release notes from CHANGELOG.md for this version
+    - sh -c 'awk "/^## \[$(echo {{ .Version }} | sed "s/^v//")\]/,/^## \[/ { if (/^## \[/ && !found) { found=1; next } if (/^## \[/ && found) exit; if (found) print }" CHANGELOG.md > .release-notes.md'
+
+builds:
+  - id: llima-box
+    main: ./cmd/llima-box
+    binary: llima-box
+
+    # Build flags
+    ldflags:
+      - -s -w
+      - -X main.Version={{ .Version }}
+      - -X main.Commit={{ .Commit }}
+      - -X main.BuildTime={{ .Date }}
+
+    env:
+      - CGO_ENABLED=0
+
+    # Target platforms matching current setup
+    goos:
+      - linux
+      - darwin
+
+    goarch:
+      - amd64
+      - arm64
+
+    # No Windows support (macOS-focused tool)
+    ignore:
+      - goos: windows
+
+archives:
+  - id: llima-box-archives
+
+    # mise-compatible naming: llima-box-{os}-{arch}
+    # GoReleaser uses 'darwin' for macOS, we'll rename in name_template
+    name_template: >-
+      {{ .ProjectName }}-
+      {{- if eq .Os "darwin" }}macos
+      {{- else }}{{ .Os }}{{ end }}-
+      {{- if eq .Arch "amd64" }}x64
+      {{- else if eq .Arch "arm64" }}arm64
+      {{- else }}{{ .Arch }}{{ end }}
+
+    # Format
+    format: tar.gz
+
+    # mise-compatible structure with bin/ subdirectory
+    # This creates: llima-box-{os}-{arch}/bin/llima-box
+    files:
+      - LICENSE
+      - README.md
+      - CHANGELOG.md
+
+    # Ensure binary goes into bin/ subdirectory
+    wrap_in_directory: true
+
+    # Set executable permissions
+    rlcp: true
+
+checksum:
+  name_template: 'checksums.txt'
+  algorithm: sha256
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  # Disable git-based changelog since we're using CHANGELOG.md
+  disable: true
+
+release:
+  # Release to GitHub
+  github:
+    owner: middlendian
+    name: llima-box
+
+  # Don't create draft releases
+  draft: false
+
+  # Don't mark as prerelease automatically
+  prerelease: auto
+
+  # Release notes
+  header: |
+    ## Installation
+
+    See the [Installation section in the README](https://github.com/middlendian/llima-box#installation) for detailed instructions.
+
+    **Quick start with mise (recommended):**
+    ```bash
+    mise use -g github:middlendian/llima-box
+    ```
+
+    **Download binaries below** ↓ or see README for platform-specific manual installation steps.
+
+  # Footer pointing to full changelog
+  footer: |
+    ---
+
+    **Full changelog**: [CHANGELOG.md](https://github.com/middlendian/llima-box/blob/main/CHANGELOG.md)
+
+  # Use extracted changelog from CHANGELOG.md
+  release_notes_file: .release-notes.md
+
+  # Include additional files in the release
+  extra_files:
+    - glob: ./LICENSE
+    - glob: ./README.md
+    - glob: ./CHANGELOG.md
+
+# Announce releases (can be extended with Twitter, Slack, etc.)
+announce:
+  skip: true
+
+# Metadata
+metadata:
+  mod_timestamp: '{{ .CommitTimestamp }}'

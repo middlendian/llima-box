@@ -78,7 +78,7 @@ func loadTestData(t *testing.T, filename string) []byte {
 // TestListInstances_SingleObject tests parsing a single instance object (the bug scenario)
 func TestListInstances_SingleObject(t *testing.T) {
 	mock := newMockExecutor()
-	mock.setResponse([]string{"list", "--json"}, loadTestData(t, "list_single_instance.json"))
+	mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_single_instance.json"))
 
 	mgr := newManagerWithExecutor("llima-box", mock)
 
@@ -103,7 +103,7 @@ func TestListInstances_SingleObject(t *testing.T) {
 // TestListInstances_Array tests parsing an array of instances
 func TestListInstances_Array(t *testing.T) {
 	mock := newMockExecutor()
-	mock.setResponse([]string{"list", "--json"}, loadTestData(t, "list_multiple_instances.json"))
+	mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_multiple_instances.json"))
 
 	mgr := newManagerWithExecutor("llima-box", mock)
 
@@ -128,7 +128,7 @@ func TestListInstances_Array(t *testing.T) {
 // TestListInstances_Empty tests parsing an empty array
 func TestListInstances_Empty(t *testing.T) {
 	mock := newMockExecutor()
-	mock.setResponse([]string{"list", "--json"}, loadTestData(t, "list_empty.json"))
+	mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_empty.json"))
 
 	mgr := newManagerWithExecutor("llima-box", mock)
 
@@ -145,7 +145,7 @@ func TestListInstances_Empty(t *testing.T) {
 // TestListInstances_InvalidJSON tests handling of invalid JSON
 func TestListInstances_InvalidJSON(t *testing.T) {
 	mock := newMockExecutor()
-	mock.setResponse([]string{"list", "--json"}, []byte("invalid json"))
+	mock.setResponse([]string{"--tty=false", "list", "--json"}, []byte("invalid json"))
 
 	mgr := newManagerWithExecutor("llima-box", mock)
 
@@ -196,7 +196,7 @@ func TestExists_InstanceExists(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := newMockExecutor()
-			mock.setResponse([]string{"list", "--json"}, loadTestData(t, tt.dataFile))
+			mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, tt.dataFile))
 
 			mgr := newManagerWithExecutor(tt.instanceName, mock)
 
@@ -243,7 +243,7 @@ func TestIsRunning(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := newMockExecutor()
-			mock.setResponse([]string{"list", "--json"}, loadTestData(t, tt.dataFile))
+			mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, tt.dataFile))
 
 			mgr := newManagerWithExecutor("llima-box", mock)
 
@@ -296,7 +296,7 @@ func TestGetInstance(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := newMockExecutor()
-			mock.setResponse([]string{"list", "--json"}, loadTestData(t, tt.dataFile))
+			mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, tt.dataFile))
 
 			mgr := newManagerWithExecutor(tt.instanceName, mock)
 
@@ -348,8 +348,8 @@ func TestStart(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := newMockExecutor()
-			mock.setResponse([]string{"list", "--json"}, loadTestData(t, tt.dataFile))
-			mock.setResponse([]string{"start", "llima-box"}, []byte{})
+			mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, tt.dataFile))
+			mock.setResponse([]string{"--tty=false", "start", "llima-box"}, []byte{})
 
 			mgr := newManagerWithExecutor("llima-box", mock)
 
@@ -359,7 +359,7 @@ func TestStart(t *testing.T) {
 			}
 
 			if tt.expectStartCmd {
-				mock.assertCalled(t, []string{"start", "llima-box"})
+				mock.assertCalled(t, []string{"--tty=false", "start", "llima-box"})
 			}
 		})
 	}
@@ -368,8 +368,8 @@ func TestStart(t *testing.T) {
 // TestStop tests stopping an instance
 func TestStop(t *testing.T) {
 	mock := newMockExecutor()
-	mock.setResponse([]string{"list", "--json"}, loadTestData(t, "list_running_instance.json"))
-	mock.setResponse([]string{"stop", "llima-box"}, []byte{})
+	mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_running_instance.json"))
+	mock.setResponse([]string{"--tty=false", "stop", "llima-box"}, []byte{})
 
 	mgr := newManagerWithExecutor("llima-box", mock)
 
@@ -378,7 +378,7 @@ func TestStop(t *testing.T) {
 		t.Fatalf("Stop failed: %v", err)
 	}
 
-	mock.assertCalled(t, []string{"stop", "llima-box"})
+	mock.assertCalled(t, []string{"--tty=false", "stop", "llima-box"})
 }
 
 // TestDelete tests deleting an instance
@@ -391,19 +391,19 @@ func TestDelete(t *testing.T) {
 		{
 			name:        "delete without force",
 			force:       false,
-			expectedCmd: []string{"delete", "llima-box"},
+			expectedCmd: []string{"--tty=false", "delete", "llima-box"},
 		},
 		{
 			name:        "delete with force",
 			force:       true,
-			expectedCmd: []string{"delete", "llima-box", "--force"},
+			expectedCmd: []string{"--tty=false", "delete", "llima-box", "--force"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := newMockExecutor()
-			mock.setResponse([]string{"list", "--json"}, loadTestData(t, "list_running_instance.json"))
+			mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_running_instance.json"))
 			mock.setResponse(tt.expectedCmd, []byte{})
 
 			mgr := newManagerWithExecutor("llima-box", mock)
@@ -459,7 +459,7 @@ func TestCommandExecutionErrors(t *testing.T) {
 		{
 			name: "list command error",
 			setup: func(m *mockExecutor) {
-				m.setError([]string{"list", "--json"}, fmt.Errorf("command failed"))
+				m.setError([]string{"--tty=false", "list", "--json"}, fmt.Errorf("command failed"))
 			},
 			test: func(mgr *Manager) error {
 				_, err := mgr.listInstances()
@@ -470,8 +470,8 @@ func TestCommandExecutionErrors(t *testing.T) {
 		{
 			name: "start command error",
 			setup: func(m *mockExecutor) {
-				m.setResponse([]string{"list", "--json"}, loadTestData(t, "list_stopped_instance.json"))
-				m.setError([]string{"start", "llima-box"}, fmt.Errorf("start failed"))
+				m.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_stopped_instance.json"))
+				m.setError([]string{"--tty=false", "start", "llima-box"}, fmt.Errorf("start failed"))
 			},
 			test: func(mgr *Manager) error {
 				return mgr.Start(context.Background())
@@ -481,8 +481,8 @@ func TestCommandExecutionErrors(t *testing.T) {
 		{
 			name: "stop command error",
 			setup: func(m *mockExecutor) {
-				m.setResponse([]string{"list", "--json"}, loadTestData(t, "list_running_instance.json"))
-				m.setError([]string{"stop", "llima-box"}, fmt.Errorf("stop failed"))
+				m.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_running_instance.json"))
+				m.setError([]string{"--tty=false", "stop", "llima-box"}, fmt.Errorf("stop failed"))
 			},
 			test: func(mgr *Manager) error {
 				return mgr.Stop(context.Background())
@@ -492,8 +492,8 @@ func TestCommandExecutionErrors(t *testing.T) {
 		{
 			name: "delete command error",
 			setup: func(m *mockExecutor) {
-				m.setResponse([]string{"list", "--json"}, loadTestData(t, "list_running_instance.json"))
-				m.setError([]string{"delete", "llima-box"}, fmt.Errorf("delete failed"))
+				m.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_running_instance.json"))
+				m.setError([]string{"--tty=false", "delete", "llima-box"}, fmt.Errorf("delete failed"))
 			},
 			test: func(mgr *Manager) error {
 				return mgr.Delete(context.Background(), false)
@@ -524,7 +524,7 @@ func TestCommandExecutionErrors(t *testing.T) {
 // TestGetConfigPath tests getting the configuration path
 func TestGetConfigPath(t *testing.T) {
 	mock := newMockExecutor()
-	mock.setResponse([]string{"list", "--json"}, loadTestData(t, "list_running_instance.json"))
+	mock.setResponse([]string{"--tty=false", "list", "--json"}, loadTestData(t, "list_running_instance.json"))
 
 	mgr := newManagerWithExecutor("llima-box", mock)
 

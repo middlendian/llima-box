@@ -103,7 +103,9 @@ func newManagerWithExecutor(instanceName string, executor commandExecutor) *Mana
 
 // execLimactl executes a limactl command
 func (m *Manager) execLimactl(ctx context.Context, args ...string) ([]byte, error) {
-	return m.executor.exec(ctx, m.limactl, args...)
+	// Add --tty=false to prevent ANSI color codes and interactive output
+	fullArgs := append([]string{"--tty=false"}, args...)
+	return m.executor.exec(ctx, m.limactl, fullArgs...)
 }
 
 // Exists checks if the VM instance exists

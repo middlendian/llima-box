@@ -46,7 +46,7 @@ Examples:
 	return cmd
 }
 
-func runDelete(cmd *cobra.Command, args []string, force bool) error {
+func runDelete(_ *cobra.Command, args []string, force bool) error {
 	// Parse path
 	projectPath, err := parseDeletePath(args)
 	if err != nil {
@@ -84,7 +84,7 @@ func runDelete(cmd *cobra.Command, args []string, force bool) error {
 	// Check if environment exists
 	ctx := context.Background()
 	envManager := env.NewManager(vmManager)
-	defer envManager.Close()
+	defer func() { _ = envManager.Close() }()
 
 	envExists, err := envManager.Exists(ctx, envName)
 	if err != nil {

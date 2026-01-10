@@ -44,7 +44,7 @@ Examples:
 	return cmd
 }
 
-func runDeleteAll(cmd *cobra.Command, args []string, force bool) error {
+func runDeleteAll(_ *cobra.Command, _ []string, force bool) error {
 	// Check if VM exists
 	vmManager := vm.NewManager("llima-box")
 
@@ -71,7 +71,7 @@ func runDeleteAll(cmd *cobra.Command, args []string, force bool) error {
 	// List environments
 	ctx := context.Background()
 	envManager := env.NewManager(vmManager)
-	defer envManager.Close()
+	defer func() { _ = envManager.Close() }()
 
 	environments, err := envManager.List(ctx)
 	if err != nil {

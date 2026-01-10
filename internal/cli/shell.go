@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/middlendian/llima-box/pkg/env"
 	"github.com/middlendian/llima-box/pkg/vm"
@@ -42,7 +41,7 @@ Examples:
 	return cmd
 }
 
-func runShell(cmd *cobra.Command, args []string) error {
+func runShell(_ *cobra.Command, args []string) error {
 	// Parse arguments
 	projectPath, command, err := parseShellArgs(args)
 	if err != nil {
@@ -73,7 +72,7 @@ func runShell(cmd *cobra.Command, args []string) error {
 	// Create or get environment
 	fmt.Printf("Setting up environment for %s...\n", projectPath)
 	envManager := env.NewManager(vmManager)
-	defer envManager.Close()
+	defer func() { _ = envManager.Close() }()
 
 	environment, err := envManager.Create(ctx, projectPath)
 	if err != nil {
@@ -162,12 +161,4 @@ func parseShellArgs(args []string) (string, []string, error) {
 	}
 
 	return absPath, command, nil
-}
-
-// formatCommand formats a command for display.
-func formatCommand(command []string) string {
-	if len(command) == 0 {
-		return ""
-	}
-	return strings.Join(command, " ")
 }

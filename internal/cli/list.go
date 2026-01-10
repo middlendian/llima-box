@@ -29,7 +29,7 @@ Example:
 	return cmd
 }
 
-func runList(cmd *cobra.Command, args []string) error {
+func runList(_ *cobra.Command, _ []string) error {
 	// Check if VM exists
 	vmManager := vm.NewManager("llima-box")
 
@@ -57,7 +57,7 @@ func runList(cmd *cobra.Command, args []string) error {
 	// List environments
 	ctx := context.Background()
 	envManager := env.NewManager(vmManager)
-	defer envManager.Close()
+	defer func() { _ = envManager.Close() }()
 
 	environments, err := envManager.List(ctx)
 	if err != nil {
@@ -71,18 +71,18 @@ func runList(cmd *cobra.Command, args []string) error {
 
 	// Print table
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(w, "ENVIRONMENT\tPROJECT PATH")
-	fmt.Fprintln(w, "-----------\t------------")
+	_, _ = fmt.Fprintln(w, "ENVIRONMENT\tPROJECT PATH")
+	_, _ = fmt.Fprintln(w, "-----------\t------------")
 
 	for _, e := range environments {
 		projectPath := e.ProjectPath
 		if projectPath == "" {
 			projectPath = "(unknown)"
 		}
-		fmt.Fprintf(w, "%s\t%s\n", e.Name, projectPath)
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", e.Name, projectPath)
 	}
 
-	w.Flush()
+	_ = w.Flush()
 
 	fmt.Printf("\nTotal: %d environment(s)\n", len(environments))
 

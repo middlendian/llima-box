@@ -59,24 +59,32 @@ llima-box delete-all
 
 ## Installation
 
-### From Release (Recommended)
+### Using mise (Recommended)
+
+The easiest way to install llima-box is using [mise](https://mise.jdx.dev):
+
+```bash
+mise use -g github:middlendian/llima-box
+```
+
+This automatically downloads and installs the correct version for your platform.
+
+### Manual Installation
 
 Download the latest release for your platform from the [releases page](https://github.com/middlendian/llima-box/releases).
 
 **macOS ARM64 (Apple Silicon):**
 ```bash
-curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-darwin-arm64.tar.gz
-tar -xzf llima-box-darwin-arm64.tar.gz
-chmod +x llima-box-darwin-arm64
-sudo mv llima-box-darwin-arm64 /usr/local/bin/llima-box
+curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-macos-arm64.tar.gz
+tar -xzf llima-box-macos-arm64.tar.gz
+sudo mv llima-box-macos-arm64/bin/llima-box /usr/local/bin/
 ```
 
-**macOS AMD64 (Intel):**
+**macOS x64 (Intel):**
 ```bash
-curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-darwin-amd64.tar.gz
-tar -xzf llima-box-darwin-amd64.tar.gz
-chmod +x llima-box-darwin-amd64
-sudo mv llima-box-darwin-amd64 /usr/local/bin/llima-box
+curl -LO https://github.com/middlendian/llima-box/releases/latest/download/llima-box-macos-x64.tar.gz
+tar -xzf llima-box-macos-x64.tar.gz
+sudo mv llima-box-macos-x64/bin/llima-box /usr/local/bin/
 ```
 
 ### From Source

@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- Release archives now use mise-compatible structure with `bin/` subdirectory
+- Archives use mise-preferred naming: `macos`/`linux` for OS and `x64`/`arm64` for architecture
+- Archives include LICENSE, README.md, and CHANGELOG.md files
+- Release notes now recommend mise installation method
 
 ## [0.2.0] - 2026-01-10
 

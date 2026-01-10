@@ -17,6 +17,34 @@ const (
 	DefaultInstanceName = "llima-box"
 )
 
+// commandExecutor defines the interface for executing limactl commands
+type commandExecutor interface {
+	exec(ctx context.Context, limactl string, args ...string) ([]byte, error)
+}
+
+// realExecutor implements commandExecutor using os/exec
+type realExecutor struct{}
+
+func (e *realExecutor) exec(ctx context.Context, limactl string, args ...string) ([]byte, error) {
+	// Check if limactl is in PATH
+	if _, err := exec.LookPath(limactl); err != nil {
+		return nil, fmt.Errorf("limactl not found in PATH. Please install Lima: https://lima-vm.io/docs/installation/")
+	}
+
+	// #nosec G204 -- args are controlled internally and validated
+	cmd := exec.CommandContext(ctx, limactl, args...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	if err != nil {
+		return nil, fmt.Errorf("limactl %s failed: %w\nstderr: %s", strings.Join(args, " "), err, stderr.String())
+	}
+
+	return stdout.Bytes(), nil
+}
+
 // Instance represents a Lima VM instance
 type Instance struct {
 	Name         string          `json:"name"`
@@ -46,6 +74,7 @@ type UserConfig struct {
 type Manager struct {
 	instanceName string
 	limactl      string
+	executor     commandExecutor
 }
 
 // NewManager creates a new VM manager
@@ -56,36 +85,27 @@ func NewManager(instanceName string) *Manager {
 	return &Manager{
 		instanceName: instanceName,
 		limactl:      "limactl",
+		executor:     &realExecutor{},
 	}
 }
 
-// findLimactl finds the limactl binary in PATH
-func (m *Manager) findLimactl() error {
-	_, err := exec.LookPath(m.limactl)
-	if err != nil {
-		return fmt.Errorf("limactl not found in PATH. Please install Lima: https://lima-vm.io/docs/installation/")
+// newManagerWithExecutor creates a new VM manager with a custom executor (for testing)
+func newManagerWithExecutor(instanceName string, executor commandExecutor) *Manager {
+	if instanceName == "" {
+		instanceName = DefaultInstanceName
 	}
-	return nil
+	return &Manager{
+		instanceName: instanceName,
+		limactl:      "limactl",
+		executor:     executor,
+	}
 }
 
 // execLimactl executes a limactl command
 func (m *Manager) execLimactl(ctx context.Context, args ...string) ([]byte, error) {
-	if err := m.findLimactl(); err != nil {
-		return nil, err
-	}
-
-	// #nosec G204 -- args are controlled internally and validated
-	cmd := exec.CommandContext(ctx, m.limactl, args...)
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	if err != nil {
-		return nil, fmt.Errorf("limactl %s failed: %w\nstderr: %s", strings.Join(args, " "), err, stderr.String())
-	}
-
-	return stdout.Bytes(), nil
+	// Add --tty=false to prevent ANSI color codes and interactive output
+	fullArgs := append([]string{"--tty=false"}, args...)
+	return m.executor.exec(ctx, m.limactl, fullArgs...)
 }
 
 // Exists checks if the VM instance exists
@@ -110,9 +130,21 @@ func (m *Manager) listInstances() ([]Instance, error) {
 		return nil, err
 	}
 
+	// limactl outputs JSON Lines format (one JSON object per line)
 	var instances []Instance
-	if err := json.Unmarshal(output, &instances); err != nil {
-		return nil, fmt.Errorf("failed to parse limactl list output: %w", err)
+	lines := strings.Split(string(output), "\n")
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+
+		var instance Instance
+		if err := json.Unmarshal([]byte(line), &instance); err != nil {
+			return nil, fmt.Errorf("failed to parse limactl list output line: %w", err)
+		}
+		instances = append(instances, instance)
 	}
 
 	return instances, nil

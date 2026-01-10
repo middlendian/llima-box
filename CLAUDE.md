@@ -171,6 +171,124 @@ The project uses golangci-lint with these linters enabled:
 - Aim for 80%+ coverage on new code
 - Use race detector: `go test -race ./...`
 
+### Testing External Commands (limactl)
+
+**CRITICAL: All interactions with `limactl` must have corresponding test data and unit tests.**
+
+The project uses a **command executor interface pattern** to enable testing without requiring actual `limactl` installation:
+
+```go
+type commandExecutor interface {
+    exec(ctx context.Context, limactl string, args ...string) ([]byte, error)
+}
+```
+
+#### Requirements for Adding/Modifying limactl Commands
+
+When you add or modify any code that calls `limactl`:
+
+1. **Capture real command output**:
+   ```bash
+   limactl <command> --json > pkg/vm/testdata/<command>_<scenario>.json
+   ```
+
+2. **Create test data files** in `pkg/vm/testdata/`:
+   - Use actual `limactl` output format (JSON Lines for `list --json`)
+   - Create files for success, error, and edge case scenarios
+   - Name files descriptively: `<command>_<scenario>.json`
+
+3. **Write comprehensive tests**:
+   ```go
+   func TestNewFeature(t *testing.T) {
+       mock := newMockExecutor()
+       mock.setResponse(
+           []string{"--tty=false", "command", "args"},
+           loadTestData(t, "command_success.json"),
+       )
+
+       mgr := newManagerWithExecutor("llima-box", mock)
+       // Test implementation
+   }
+   ```
+
+4. **Test all scenarios**:
+   - ✅ Success case with expected output
+   - ✅ Error case with command failure
+   - ✅ Edge cases (empty output, malformed output, etc.)
+   - ✅ Verify the correct command was called with `mock.assertCalled()`
+
+#### Important Notes About limactl Output
+
+- **JSON Lines format**: `limactl list --json` outputs JSONL (one JSON object per line), NOT a JSON array
+- **Always include `--tty=false`**: Prevents ANSI color codes and interactive prompts
+- **Test data must match real output**: Use actual `limactl` commands to generate test data
+
+#### Example: Adding a New Command
+
+```go
+// 1. Implementation
+func (m *Manager) Inspect() (*InstanceDetails, error) {
+    output, err := m.execLimactl(context.Background(), "inspect", m.instanceName)
+    if err != nil {
+        return nil, fmt.Errorf("failed to inspect: %w", err)
+    }
+    // Parse output...
+}
+
+// 2. Test data: pkg/vm/testdata/inspect_success.json
+// (captured from: limactl inspect llima-box --json)
+
+// 3. Tests
+func TestInspect(t *testing.T) {
+    tests := []struct {
+        name     string
+        dataFile string
+        wantErr  bool
+    }{
+        {"success", "inspect_success.json", false},
+        {"not found", "inspect_not_found.json", true},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            mock := newMockExecutor()
+            if tt.wantErr {
+                mock.setError(
+                    []string{"--tty=false", "inspect", "llima-box"},
+                    fmt.Errorf("instance not found"),
+                )
+            } else {
+                mock.setResponse(
+                    []string{"--tty=false", "inspect", "llima-box"},
+                    loadTestData(t, tt.dataFile),
+                )
+            }
+
+            mgr := newManagerWithExecutor("llima-box", mock)
+            _, err := mgr.Inspect()
+
+            if (err != nil) != tt.wantErr {
+                t.Errorf("expected error=%v, got error=%v", tt.wantErr, err)
+            }
+
+            if !tt.wantErr {
+                mock.assertCalled(t, []string{"--tty=false", "inspect", "llima-box"})
+            }
+        })
+    }
+}
+```
+
+#### Why This Matters
+
+- **No CI flakiness**: Tests don't depend on external VMs or commands
+- **Fast feedback**: Tests run in milliseconds, not seconds
+- **Portable**: Tests work in any environment (Linux, macOS, CI)
+- **Maintainable**: Test data reflects actual command behavior
+- **Debuggable**: Easy to reproduce and understand failures
+
+See `docs/TESTING.md` for detailed documentation on the mock executor pattern.
+
 ### Security
 - Avoid command injection, XSS, SQL injection
 - Validate at system boundaries only

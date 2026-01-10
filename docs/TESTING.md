@@ -62,7 +62,168 @@ go test ./... -cover
 go test ./... -short
 ```
 
+## Command Stubbing with Mock Executor
+
+The VM manager uses a **command executor interface** pattern that allows tests to stub `limactl` command responses without requiring the actual `limactl` binary or running VMs.
+
+### Architecture
+
+**Production Code:**
+```go
+type commandExecutor interface {
+    exec(ctx context.Context, limactl string, args ...string) ([]byte, error)
+}
+
+type realExecutor struct{}  // Uses os/exec to run actual commands
+
+type Manager struct {
+    executor commandExecutor  // Injected for testability
+}
+```
+
+**Test Code:**
+```go
+type mockExecutor struct {
+    responses map[string][]byte  // Command args -> response data
+    errors    map[string]error    // Command args -> errors
+    calls     [][]string          // Tracks all calls for assertions
+}
+```
+
+### Creating Test Data Files
+
+All `limactl` command responses are stored as test data files in `pkg/vm/testdata/`:
+
+```bash
+pkg/vm/testdata/
+├── list_single_instance.json    # One instance (JSON Lines format)
+├── list_multiple_instances.json # Multiple instances (one per line)
+├── list_empty.json               # No instances (empty file)
+├── list_running_instance.json   # Instance with status "Running"
+└── list_stopped_instance.json   # Instance with status "Stopped"
+```
+
+**Important**: `limactl list --json` outputs **JSON Lines format** (JSONL), not a JSON array:
+- One JSON object per line
+- No commas between objects
+- No surrounding brackets
+
+Example `list_single_instance.json`:
+```json
+{"name":"llima-box","hostname":"lima-llima-box","status":"Running","dir":"/Users/test/.lima/llima-box","vmType":"vz","arch":"aarch64","cpus":4,"memory":4294967296}
+```
+
+Example `list_multiple_instances.json`:
+```json
+{"name":"llima-box","hostname":"lima-llima-box","status":"Running","dir":"/Users/test/.lima/llima-box","vmType":"vz","arch":"aarch64","cpus":4,"memory":4294967296}
+{"name":"default","hostname":"lima-default","status":"Stopped","dir":"/Users/test/.lima/default","vmType":"vz","arch":"aarch64","cpus":4,"memory":4294967296}
+```
+
+### Writing Tests with Mock Executor
+
+**Basic pattern:**
+
+```go
+func TestSomeFeature(t *testing.T) {
+    // 1. Create mock executor
+    mock := newMockExecutor()
+
+    // 2. Set up expected command responses
+    mock.setResponse(
+        []string{"--tty=false", "list", "--json"},
+        loadTestData(t, "list_single_instance.json"),
+    )
+
+    // 3. Create manager with mock
+    mgr := newManagerWithExecutor("llima-box", mock)
+
+    // 4. Test the feature
+    exists, err := mgr.Exists()
+
+    // 5. Assert results
+    assert.NoError(t, err)
+    assert.True(t, exists)
+}
+```
+
+**Testing error conditions:**
+
+```go
+func TestCommandError(t *testing.T) {
+    mock := newMockExecutor()
+
+    // Simulate command failure
+    mock.setError(
+        []string{"--tty=false", "start", "llima-box"},
+        fmt.Errorf("VM failed to start"),
+    )
+
+    mgr := newManagerWithExecutor("llima-box", mock)
+    err := mgr.Start(context.Background())
+
+    assert.Error(t, err)
+    assert.Contains(t, err.Error(), "failed to start")
+}
+```
+
+**Asserting command was called:**
+
+```go
+func TestStartCallsLimactl(t *testing.T) {
+    mock := newMockExecutor()
+    mock.setResponse([]string{"--tty=false", "list", "--json"}, ...)
+    mock.setResponse([]string{"--tty=false", "start", "llima-box"}, []byte{})
+
+    mgr := newManagerWithExecutor("llima-box", mock)
+    mgr.Start(context.Background())
+
+    // Verify limactl start was called
+    mock.assertCalled(t, []string{"--tty=false", "start", "llima-box"})
+}
+```
+
+### Important Notes
+
+1. **Always include `--tty=false`**: All commands automatically include this flag to prevent ANSI codes and interactive output
+2. **Use test data files**: Store realistic command responses in `testdata/` for maintainability
+3. **Test all code paths**: Create test data for success cases, error cases, and edge cases
+4. **Match actual output format**: Use real `limactl` output to create test data files
+
+### Adding Support for New Commands
+
+When adding a new `limactl` command interaction:
+
+1. **Capture real output**:
+   ```bash
+   limactl <new-command> --json > pkg/vm/testdata/<command>_<scenario>.json
+   ```
+
+2. **Create test data file** with the captured output
+
+3. **Write tests** for all scenarios (success, errors, edge cases):
+   ```go
+   func TestNewCommand(t *testing.T) {
+       mock := newMockExecutor()
+       mock.setResponse(
+           []string{"--tty=false", "new-command", "arg"},
+           loadTestData(t, "new_command_success.json"),
+       )
+       // ... test implementation
+   }
+   ```
+
+4. **Update this documentation** with the new command patterns
+
 ### Test Coverage
+
+Current test coverage for `pkg/vm`:
+- **46.3%** of statements covered
+- All major `limactl` interactions tested:
+  - `list --json` (single, multiple, empty responses)
+  - `start <instance>`
+  - `stop <instance>`
+  - `delete <instance>` (with and without `--force`)
+  - Error handling for all commands
 
 #### Path Sanitization
 - Convert various path formats to valid environment names

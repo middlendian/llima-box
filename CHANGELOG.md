@@ -29,6 +29,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - golangci-lint configuration with 15+ linters
 - Comprehensive build and development documentation in CONTRIBUTING.md
 
+### Removed
+- Test commands (`test-vm`, `test-naming`) - replaced by production CLI commands
+
 ## [0.1.0] - TBD
 
 Initial development release (not yet published).

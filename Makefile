@@ -20,10 +20,12 @@ GOFMT=gofmt
 GOLINT=golangci-lint
 
 # Go proxy configuration with fallback to direct downloads
-export GOPROXY=https://proxy.golang.org,direct
+# Use direct mode in environments with DNS issues (e.g., some containers)
+export GOPROXY?=https://proxy.golang.org,direct
+export GOSUMDB?=sum.golang.org
 
 # Build targets
-.PHONY: help check build all clean test coverage lint fmt fmt-check vet tidy install deps deps-verify
+.PHONY: help check check-fast build all clean test coverage lint fmt fmt-check vet tidy install deps deps-verify
 
 # Default target - show help
 .DEFAULT_GOAL := help
@@ -104,10 +106,18 @@ lint:
 # Build first to apply automatic fixes (fmt, tidy)
 check: build vet lint deps-verify fmt-check test
 
+# Run fast checks without network dependencies (for environments with DNS issues)
+check-fast: fmt vet test
+	@echo "Fast checks passed (skipped: lint, deps-verify)"
+	@echo "Note: Run 'make check' for full validation when network is available"
+
 # Update dependencies
 deps:
 	@echo "Downloading dependencies..."
-	$(GOMOD) download
+	@if ! $(GOMOD) download 2>/dev/null; then \
+		echo "Warning: Failed to download dependencies via proxy, retrying with direct mode..."; \
+		GOPROXY=direct $(GOMOD) download || exit 1; \
+	fi
 	$(GOMOD) tidy
 
 # Verify dependencies
@@ -122,6 +132,7 @@ help:
 	@echo "Common targets:"
 	@echo "  make help           - Show this help message (default)"
 	@echo "  make check          - Run all validations (fmt, vet, lint, test)"
+	@echo "  make check-fast     - Run fast checks without network (fmt, vet, test)"
 	@echo "  make build          - Build the binary for current platform"
 	@echo ""
 	@echo "Build targets:"

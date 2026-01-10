@@ -199,3 +199,8 @@ func (m *Manager) WriteDefaultConfig() error {
 
 	return nil
 }
+
+// GetInstanceName returns the instance name
+func (m *Manager) GetInstanceName() string {
+	return m.instanceName
+}

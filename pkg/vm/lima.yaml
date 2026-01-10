@@ -56,6 +56,9 @@ provision:
 
     echo "Creating persistent namespace for $ENV_NAME at $PROJECT_PATH"
 
+    # Pre-create the namespace file - unshare requires it to exist
+    touch "$NS_FILE"
+
     unshare --mount="$NS_FILE" --propagation private bash -c '
         mount --make-rprivate /
         mkdir -p /tmp/isolated-root
@@ -133,13 +136,13 @@ provision:
     chmod +x /usr/local/bin/sandbox.sh
 
 # Configure sudo permissions
-- mode: system
+- mode: user
   script: |
     #!/bin/bash
     set -eux -o pipefail
 
-    echo "lima ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh" > /etc/sudoers.d/lima-environments
-    chmod 440 /etc/sudoers.d/lima-environments
+    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh" | sudo tee /etc/sudoers.d/lima-environments
+    sudo chmod 440 /etc/sudoers.d/lima-environments
 
 probes:
 - mode: readiness

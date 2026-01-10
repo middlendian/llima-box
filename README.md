@@ -50,7 +50,7 @@ llima-box delete-all
 - [Testing Plan](docs/TESTING.md) - Manual and automated testing approach
 - [Implementation Plan](docs/IMPLEMENTATION_PLAN.md) - Step-by-step implementation phases
 - [POC Status](docs/POC_STATUS.md) - Lima integration proof-of-concept validation
-- [Next Steps](docs/NEXT_STEPS.md) - Remaining work for v1 (2-4 hours of testing)
+- [Next Steps](docs/NEXT_STEPS.md) - Release strategy (v0.2.0 beta, then v1.0.0 stable)
 
 ## Prerequisites
 
@@ -111,10 +111,11 @@ sudo mv bin/llima-box /usr/local/bin/
   - `delete` - Remove specific environment
   - `delete-all` - Remove all environments
 
-### ⏳ Remaining for v1 Release
-- Manual testing on macOS with Lima (all 14 test scenarios)
-- Bug fixes from testing
-- Final documentation polish
+### 🎯 Release Plan
+- **v0.2.0 Beta** (Ready now): Implementation complete, seeking real-world testing feedback
+- **v1.0.0 Stable** (After beta): Manual testing complete, bugs fixed, production-ready
+
+See [docs/V0.2_RELEASE_CHECKLIST.md](docs/V0.2_RELEASE_CHECKLIST.md) for beta release details.
 
 ## How It Works
 

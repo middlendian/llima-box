@@ -32,10 +32,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Default shell changed from zsh to bash for better agent compatibility
 - CLAUDE.md now recommends `GOPROXY=direct make check` to avoid network issues
-- Documentation updated to reflect v1 implementation completion (~95% done, testing remains)
+- Documentation updated to reflect implementation completion (~95% done, testing remains)
 - README.md status changed from "In Development" to "Beta" to reflect actual progress
 - docs/NEXT_STEPS.md, docs/IMPLEMENTATION_PLAN.md updated with accurate phase completion status
-- docs/V1_RELEASE_CHECKLIST.md added to track final steps before v1.0.0 release
+- Release strategy: v0.2.0 beta first, then v1.0.0 stable after real-world testing
+- docs/V0.2_RELEASE_CHECKLIST.md added to track beta release steps
 
 ### Removed
 - Test commands (`test-vm`, `test-naming`) - replaced by production CLI commands

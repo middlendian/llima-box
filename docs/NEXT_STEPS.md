@@ -153,26 +153,40 @@ Ideas for future versions (not blocking v1):
 - **Snapshots**: Save/restore environment state
 - **Templates**: Pre-configured environment templates
 
-## What's Left for v1 Release
+## Release Strategy
 
-Implementation is ~95% complete. Remaining work:
+### v0.2.0 Beta (Next - Ready Now)
 
-1. **Manual Testing on macOS**: Run all 14 test scenarios from `docs/TESTING.md`
+Implementation is ~95% complete. Ready for beta release to gather real-world feedback.
+
+**Remaining work** (~30-60 minutes):
+1. Update CHANGELOG.md with v0.2.0 section
+2. Create PR and merge to main
+3. Create and push v0.2.0 tag
+4. GitHub Actions will build and publish binaries
+
+See `docs/V0.2_RELEASE_CHECKLIST.md` for details.
+
+### v1.0.0 Stable (After Beta Testing)
+
+Release v1.0.0 after real-world validation:
+
+1. **Beta Testing** (1-2 weeks after v0.2.0)
+   - Early adopters test on real projects
+   - Issues filed and triaged
+   - Edge cases identified
+
+2. **Manual Testing on macOS**: Run all 14 test scenarios from `docs/TESTING.md`
    - Requires macOS system with Lima installed
    - Validates end-to-end integration
-   - Identifies any runtime issues not caught in unit tests
+   - Documents test results
 
-2. **Documentation Updates**:
-   - Update README.md status from "In Development" to "Beta" or "v1.0"
-   - Verify all usage examples match actual implementation
-   - Update installation instructions if needed
+3. **Bug Fixes**: Address critical issues from beta feedback
 
-3. **Bug Fixes**: Address any issues found during manual testing
-
-4. **Release Preparation**:
+4. **v1.0.0 Release**:
    - Update CHANGELOG.md with v1.0.0 section
    - Create release tag
-   - Build and publish binaries for all platforms
+   - Build and publish stable binaries
 
 ## Questions?
 

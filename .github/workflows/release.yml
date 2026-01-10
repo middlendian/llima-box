@@ -61,10 +61,31 @@ jobs:
 
       - name: Create release archives
         run: |
+          # Create mise-compatible archives with bin/ directory structure
           cd bin
           for binary in llima-box-*; do
             if [ "$binary" != "checksums.txt" ]; then
-              tar -czf "${binary}.tar.gz" "$binary"
+              # Extract platform from binary name (e.g., llima-box-darwin-arm64 -> darwin-arm64)
+              platform="${binary#llima-box-}"
+              archive_name="llima-box-${platform}"
+
+              # Create temporary directory structure
+              mkdir -p "${archive_name}/bin"
+
+              # Copy binary and rename to llima-box (without platform suffix)
+              cp "$binary" "${archive_name}/bin/llima-box"
+              chmod +x "${archive_name}/bin/llima-box"
+
+              # Copy documentation files
+              cp ../LICENSE "${archive_name}/"
+              cp ../README.md "${archive_name}/"
+              cp ../CHANGELOG.md "${archive_name}/"
+
+              # Create tar.gz archive
+              tar -czf "${archive_name}.tar.gz" "${archive_name}"
+
+              # Clean up temporary directory
+              rm -rf "${archive_name}"
             fi
           done
           ls -lh
@@ -97,38 +118,43 @@ jobs:
           echo "" >> release_notes.md
           echo "## Installation" >> release_notes.md
           echo "" >> release_notes.md
+          echo "### Using mise (recommended)" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "The easiest way to install llima-box is using [mise](https://mise.jdx.dev):" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo "mise use -g github:middlendian/llima-box" >> release_notes.md
+          echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Manual Installation" >> release_notes.md
+          echo "" >> release_notes.md
           echo "Download the appropriate binary for your platform and add it to your PATH:" >> release_notes.md
           echo "" >> release_notes.md
-          echo "### macOS ARM64 (Apple Silicon)" >> release_notes.md
+          echo "#### macOS ARM64 (Apple Silicon)" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo "curl -LO https://github.com/${{ github.repository }}/releases/download/$VERSION/llima-box-darwin-arm64.tar.gz" >> release_notes.md
-          echo "tar -xzf llima-box-darwin-arm64.tar.gz" >> release_notes.md
-          echo "chmod +x llima-box-darwin-arm64" >> release_notes.md
-          echo "sudo mv llima-box-darwin-arm64 /usr/local/bin/llima-box" >> release_notes.md
+          echo "curl -LO https://github.com/${{ github.repository }}/releases/download/$VERSION/llima-box-macos-arm64.tar.gz" >> release_notes.md
+          echo "tar -xzf llima-box-macos-arm64.tar.gz" >> release_notes.md
+          echo "sudo mv llima-box-macos-arm64/bin/llima-box /usr/local/bin/" >> release_notes.md
           echo '```' >> release_notes.md
           echo "" >> release_notes.md
-          echo "### macOS AMD64 (Intel)" >> release_notes.md
+          echo "#### macOS x64 (Intel)" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo "curl -LO https://github.com/${{ github.repository }}/releases/download/$VERSION/llima-box-darwin-amd64.tar.gz" >> release_notes.md
-          echo "tar -xzf llima-box-darwin-amd64.tar.gz" >> release_notes.md
-          echo "chmod +x llima-box-darwin-amd64" >> release_notes.md
-          echo "sudo mv llima-box-darwin-amd64 /usr/local/bin/llima-box" >> release_notes.md
+          echo "curl -LO https://github.com/${{ github.repository }}/releases/download/$VERSION/llima-box-macos-x64.tar.gz" >> release_notes.md
+          echo "tar -xzf llima-box-macos-x64.tar.gz" >> release_notes.md
+          echo "sudo mv llima-box-macos-x64/bin/llima-box /usr/local/bin/" >> release_notes.md
           echo '```' >> release_notes.md
           echo "" >> release_notes.md
-          echo "### Linux ARM64" >> release_notes.md
+          echo "#### Linux ARM64" >> release_notes.md
           echo '```bash' >> release_notes.md
           echo "curl -LO https://github.com/${{ github.repository }}/releases/download/$VERSION/llima-box-linux-arm64.tar.gz" >> release_notes.md
           echo "tar -xzf llima-box-linux-arm64.tar.gz" >> release_notes.md
-          echo "chmod +x llima-box-linux-arm64" >> release_notes.md
-          echo "sudo mv llima-box-linux-arm64 /usr/local/bin/llima-box" >> release_notes.md
+          echo "sudo mv llima-box-linux-arm64/bin/llima-box /usr/local/bin/" >> release_notes.md
           echo '```' >> release_notes.md
           echo "" >> release_notes.md
-          echo "### Linux AMD64" >> release_notes.md
+          echo "#### Linux x64" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo "curl -LO https://github.com/${{ github.repository }}/releases/download/$VERSION/llima-box-linux-amd64.tar.gz" >> release_notes.md
-          echo "tar -xzf llima-box-linux-amd64.tar.gz" >> release_notes.md
-          echo "chmod +x llima-box-linux-amd64" >> release_notes.md
-          echo "sudo mv llima-box-linux-amd64 /usr/local/bin/llima-box" >> release_notes.md
+          echo "curl -LO https://github.com/${{ github.repository }}/releases/download/$VERSION/llima-box-linux-x64.tar.gz" >> release_notes.md
+          echo "tar -xzf llima-box-linux-x64.tar.gz" >> release_notes.md
+          echo "sudo mv llima-box-linux-x64/bin/llima-box /usr/local/bin/" >> release_notes.md
           echo '```' >> release_notes.md
           echo "" >> release_notes.md
           echo "## Verify Checksums" >> release_notes.md

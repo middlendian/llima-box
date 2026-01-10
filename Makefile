@@ -39,23 +39,23 @@ build: deps fmt
 	$(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME) $(MAIN_PATH)
 
 # Build for multiple platforms
-build-all: build-linux-amd64 build-linux-arm64 build-darwin-amd64 build-darwin-arm64
+build-all: build-linux-x64 build-linux-arm64 build-macos-x64 build-macos-arm64
 
-build-linux-amd64:
-	@echo "Building for Linux AMD64..."
-	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-amd64 $(MAIN_PATH)
+build-linux-x64:
+	@echo "Building for Linux x64..."
+	GOOS=linux GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-x64 $(MAIN_PATH)
 
 build-linux-arm64:
 	@echo "Building for Linux ARM64..."
 	GOOS=linux GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-linux-arm64 $(MAIN_PATH)
 
-build-darwin-amd64:
-	@echo "Building for macOS AMD64..."
-	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-amd64 $(MAIN_PATH)
+build-macos-x64:
+	@echo "Building for macOS x64..."
+	GOOS=darwin GOARCH=amd64 $(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-macos-x64 $(MAIN_PATH)
 
-build-darwin-arm64:
+build-macos-arm64:
 	@echo "Building for macOS ARM64..."
-	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-darwin-arm64 $(MAIN_PATH)
+	GOOS=darwin GOARCH=arm64 $(GOBUILD) $(LDFLAGS) -o bin/$(BINARY_NAME)-macos-arm64 $(MAIN_PATH)
 
 # Install the binary
 install:

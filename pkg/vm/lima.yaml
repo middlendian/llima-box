@@ -28,12 +28,7 @@ provision:
     export DEBIAN_FRONTEND=noninteractive
 
     apt-get update
-    apt-get install -y zsh build-essential curl git
-
-    # Install mise-en-place
-    curl https://mise.run | sh
-
-    chsh -s /bin/zsh
+    apt-get install -y build-essential curl git
 
 # Create namespace setup script
 - mode: system

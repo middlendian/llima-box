@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Missing sudo permissions for sandbox.sh, pkill, nsenter, findmnt, mount, mountpoint, and su commands
 - Lack of feedback during namespace verification - added debug logging
 - Permission denied error when verifying namespace PID file - verification commands now use sudo
+- VM provisioning hanging indefinitely - removed non-essential zsh and mise installation that blocked SSH startup
 
 ## [0.3.0]
 

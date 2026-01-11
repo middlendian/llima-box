@@ -227,14 +227,9 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 		return err
 	}
 
-	// Build command to execute - default to interactive bash
-	var cmdStr string
-	switch {
-	case len(cmd) == 0:
-		cmdStr = "bash -i"
-	case len(cmd) == 1 && cmd[0] == "bash":
-		cmdStr = "bash -i"
-	default:
+	// Build command to execute
+	cmdStr := "zsh"
+	if len(cmd) > 0 {
 		cmdStr = strings.Join(cmd, " ")
 	}
 
@@ -244,8 +239,6 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 		env.ProjectPath,
 		cmdStr,
 	)
-
-	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Entering namespace with command: %s\n", sshCmd)
 
 	// Execute interactively
 	return m.sshClient.ExecInteractive(sshCmd)

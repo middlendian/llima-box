@@ -247,7 +247,7 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 // createUser creates a Linux user account for the environment
 func (m *Manager) createUser(ctx context.Context, username string) error {
 	// Create user with home directory
-	cmd := fmt.Sprintf("sudo useradd -m -s /bin/zsh %s", username)
+	cmd := fmt.Sprintf("sudo useradd -m -s /bin/bash %s", username)
 
 	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Creating user: %s\n", cmd)
 

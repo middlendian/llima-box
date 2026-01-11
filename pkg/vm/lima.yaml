@@ -142,7 +142,7 @@ provision:
     fi
 
     if [ $# -eq 0 ]; then
-        set -- zsh
+        set -- bash
     fi
 
     if [ ! -f "$PID_FILE" ]; then

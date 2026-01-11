@@ -43,9 +43,9 @@ Examples:
 	return cmd
 }
 
-func runShell(_ *cobra.Command, args []string) error {
+func runShell(cmd *cobra.Command, args []string) error {
 	// Parse arguments
-	projectPath, command, err := parseShellArgs(args)
+	projectPath, command, err := parseShellArgs(cmd, args)
 	if err != nil {
 		return fmt.Errorf("failed to parse arguments: %w", err)
 	}
@@ -95,20 +95,15 @@ func runShell(_ *cobra.Command, args []string) error {
 
 // parseShellArgs parses the shell command arguments.
 // Returns: (projectPath, command, error)
-func parseShellArgs(args []string) (string, []string, error) {
+func parseShellArgs(cmd *cobra.Command, args []string) (string, []string, error) {
 	var projectPath string
 	var command []string
 
-	// Find "--" separator
-	dashIndex := -1
-	for i, arg := range args {
-		if arg == "--" {
-			dashIndex = i
-			break
-		}
-	}
+	// Get the position of "--" separator (Cobra strips it from args)
+	dashIndex := cmd.ArgsLenAtDash()
 
 	// Parse based on "--" position
+	// Note: Cobra strips "--" from args, but ArgsLenAtDash() tells us where it was
 	if dashIndex == -1 {
 		// No "--" separator
 		if len(args) == 0 {
@@ -127,17 +122,17 @@ func parseShellArgs(args []string) (string, []string, error) {
 	} else {
 		// Has "--" separator
 		if dashIndex == 0 {
-			// "-- command": use current directory
+			// "-- command": use current directory, all args are command
 			cwd, err := os.Getwd()
 			if err != nil {
 				return "", nil, fmt.Errorf("failed to get current directory: %w", err)
 			}
 			projectPath = cwd
-			command = args[dashIndex+1:]
+			command = args // All args after -- are the command
 		} else {
-			// "path -- command"
+			// "path -- command": args before dashIndex are path, after are command
 			projectPath = args[0]
-			command = args[dashIndex+1:]
+			command = args[dashIndex:]
 		}
 
 		if len(command) == 0 {

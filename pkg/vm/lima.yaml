@@ -139,13 +139,9 @@ provision:
 
     PID_FILE="/home/$ENV_NAME/namespace.pid"
 
-    if [ -z "$ENV_NAME" ] || [ -z "$PROJECT_PATH" ]; then
-        echo "Usage: $0 <env_name> <project_path> [command...]"
+    if [ -z "$ENV_NAME" ] || [ -z "$PROJECT_PATH" ] || [ $# -eq 0 ]; then
+        echo "Usage: $0 <env_name> <project_path> <command...>"
         exit 1
-    fi
-
-    if [ $# -eq 0 ]; then
-        set -- bash
     fi
 
     if [ ! -f "$PID_FILE" ]; then
@@ -164,7 +160,7 @@ provision:
 
     # Enter the namespace using the PID and switch to the environment user
     # Note: We use 'su -l' to get a login shell with the user's environment
-    nsenter --mount="/proc/$NS_PID/ns/mnt" su -l "$ENV_NAME" -c "cd '$PROJECT_PATH' && exec \"\$@\"" -- "$@"
+    nsenter --mount="/proc/$NS_PID/ns/mnt" su -l "$ENV_NAME" -c "cd '$PROJECT_PATH' && exec \"\$0\" \"\$@\"" -- "$@"
     SCRIPT_EOF
 
     chmod +x /usr/local/bin/sandbox.sh

@@ -228,7 +228,7 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 	}
 
 	// Build command to execute
-	cmdStr := "zsh"
+	cmdStr := "bash"
 	if len(cmd) > 0 {
 		cmdStr = strings.Join(cmd, " ")
 	}

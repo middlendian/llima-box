@@ -250,7 +250,7 @@ func shellCommand(cmd *cobra.Command, args []string) error {
 
 **Flow:**
 1. Parse path (default: current directory)
-2. Parse command (default: `zsh`)
+2. Parse command (default: `bash`)
 3. Ensure VM is running
 4. Create environment if needed
 5. Enter namespace

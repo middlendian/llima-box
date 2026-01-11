@@ -288,14 +288,37 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 	}
 
 	// Verify namespace PID file exists
-	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Verifying namespace PID file...\n")
-	checkCmd := fmt.Sprintf("test -f %s", env.NamespacePIDFile)
-	_, err = m.sshClient.ExecContext(ctx, checkCmd)
-	if err != nil {
-		return fmt.Errorf("namespace PID file not created: %s", env.NamespacePIDFile)
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Verifying namespace PID file at: %s\n", env.NamespacePIDFile)
+
+	// First, list the home directory to see what's there
+	lsCmd := fmt.Sprintf("ls -la /home/%s/", env.UserName)
+	lsOutput, lsErr := m.sshClient.ExecContext(ctx, lsCmd)
+	if lsErr != nil {
+		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Failed to list home dir: %v\n", lsErr)
+	} else {
+		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Home directory contents:\n%s\n", lsOutput)
 	}
 
-	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace ready\n")
+	// Try to read the PID file
+	catCmd := fmt.Sprintf("cat %s 2>&1", env.NamespacePIDFile)
+	catOutput, catErr := m.sshClient.ExecContext(ctx, catCmd)
+	if catErr != nil {
+		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Failed to read PID file: %v\nOutput: %s\n", catErr, catOutput)
+		return fmt.Errorf("namespace PID file not created: %s (error: %w, output: %s)", env.NamespacePIDFile, catErr, catOutput)
+	}
+
+	pid := strings.TrimSpace(catOutput)
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace PID: %s\n", pid)
+
+	// Verify the namespace process is still running
+	checkProcCmd := fmt.Sprintf("kill -0 %s 2>&1", pid)
+	checkOutput, checkErr := m.sshClient.ExecContext(ctx, checkProcCmd)
+	if checkErr != nil {
+		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace process check failed: %v\nOutput: %s\n", checkErr, checkOutput)
+		return fmt.Errorf("namespace process (PID %s) is not running: %w", pid, checkErr)
+	}
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace ready (PID %s is running)\n", pid)
 	return nil
 }
 

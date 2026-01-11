@@ -31,15 +31,45 @@ func (e *realExecutor) exec(ctx context.Context, limactl string, args ...string)
 		return nil, fmt.Errorf("limactl not found in PATH. Please install Lima: https://lima-vm.io/docs/installation/")
 	}
 
+	// Log the command being executed
+	cmdStr := fmt.Sprintf("%s %s", limactl, strings.Join(args, " "))
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Executing: %s\n", cmdStr)
+
 	// #nosec G204 -- args are controlled internally and validated
 	cmd := exec.CommandContext(ctx, limactl, args...)
+
+	// For create/start commands, stream output directly to stderr for real-time feedback
+	// For other commands (like list --json), capture output for parsing
 	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	needCapture := len(args) > 0 && (args[0] == "list" || strings.Contains(strings.Join(args, " "), "--json"))
+
+	if needCapture {
+		// Capture output for parsing
+		cmd.Stdout = &stdout
+		cmd.Stderr = &stderr
+	} else {
+		// Stream output directly to terminal for real-time feedback
+		cmd.Stdout = os.Stderr
+		cmd.Stderr = os.Stderr
+	}
 
 	err := cmd.Run()
-	if err != nil {
-		return nil, fmt.Errorf("limactl %s failed: %w\nstderr: %s", strings.Join(args, " "), err, stderr.String())
+
+	if needCapture {
+		// Log captured stderr for debugging
+		if stderr.Len() > 0 {
+			stderrStr := strings.TrimSpace(stderr.String())
+			if stderrStr != "" {
+				fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: limactl stderr:\n%s\n", stderrStr)
+			}
+		}
+
+		if err != nil {
+			return nil, fmt.Errorf("limactl %s failed: %w\nstderr: %s", strings.Join(args, " "), err, stderr.String())
+		}
+	} else if err != nil {
+		// For streamed commands, just report the error
+		return nil, fmt.Errorf("limactl %s failed: %w", strings.Join(args, " "), err)
 	}
 
 	return stdout.Bytes(), nil

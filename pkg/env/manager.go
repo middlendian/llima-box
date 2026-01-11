@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -247,8 +248,14 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 func (m *Manager) createUser(ctx context.Context, username string) error {
 	// Create user with home directory
 	cmd := fmt.Sprintf("sudo useradd -m -s /bin/zsh %s", username)
-	_, err := m.sshClient.ExecContext(ctx, cmd)
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Creating user: %s\n", cmd)
+
+	output, err := m.sshClient.ExecContext(ctx, cmd)
 	if err != nil {
+		if output != "" {
+			fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: User creation output: %s\n", output)
+		}
 		return fmt.Errorf("failed to create user account: %w", err)
 	}
 
@@ -271,12 +278,12 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 		env.ProjectPath,
 	)
 
-	output, err := m.sshClient.ExecContext(ctx, cmd)
+	// Log the command being executed
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Creating namespace: %s\n", cmd)
+
+	// Use streaming execution to see output in real-time
+	err := m.sshClient.ExecContextStreaming(ctx, cmd)
 	if err != nil {
-		// Include the actual command output in the error message
-		if output != "" {
-			return fmt.Errorf("failed to create namespace: %w\nOutput: %s", err, output)
-		}
 		return fmt.Errorf("failed to create namespace: %w", err)
 	}
 

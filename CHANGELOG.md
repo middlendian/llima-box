@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Colored, structured logging with INFO/SUCCESS/WARNING/ERROR levels
 - Informational messages now output to stderr (allows stdout capture for data)
+- Real-time streaming of Lima VM creation and startup output for better visibility
+- Real-time streaming of namespace creation script output
+- Debug logging for all VM and namespace operations with command execution details
 
 ### Fixed
 

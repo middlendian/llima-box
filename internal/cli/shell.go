@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/middlendian/llima-box/internal/log"
 	"github.com/middlendian/llima-box/pkg/env"
 	"github.com/middlendian/llima-box/pkg/vm"
 	"github.com/spf13/cobra"
@@ -51,7 +52,7 @@ func runShell(_ *cobra.Command, args []string) error {
 
 	// Ensure VM is running
 	ctx := context.Background()
-	fmt.Println("Ensuring VM is running...")
+	log.Info("Ensuring VM is running...")
 	vmManager := vm.NewManager("llima-box")
 
 	exists, err := vmManager.Exists()
@@ -60,18 +61,20 @@ func runShell(_ *cobra.Command, args []string) error {
 	}
 
 	if !exists {
-		fmt.Println("Creating VM (this may take a few minutes)...")
+		log.Info("Creating VM (this may take a few minutes)...")
 		if err := vmManager.Create(ctx); err != nil {
 			return fmt.Errorf("failed to create VM: %w", err)
 		}
+		log.Success("VM created successfully")
 	}
 
 	if err := vmManager.EnsureRunning(ctx); err != nil {
 		return fmt.Errorf("failed to start VM: %w", err)
 	}
+	log.Success("VM is running")
 
 	// Create or get environment
-	fmt.Printf("Setting up environment for %s...\n", projectPath)
+	log.Info("Setting up environment for %s", projectPath)
 	envManager := env.NewManager(vmManager)
 	defer func() { _ = envManager.Close() }()
 
@@ -80,7 +83,7 @@ func runShell(_ *cobra.Command, args []string) error {
 		return fmt.Errorf("failed to create environment: %w", err)
 	}
 
-	fmt.Printf("Environment: %s\n", environment.Name)
+	log.Success("Environment ready: %s", environment.Name)
 
 	// Enter namespace and execute command
 	if err := envManager.EnterNamespace(ctx, environment, command); err != nil {

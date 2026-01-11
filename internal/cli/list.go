@@ -6,6 +6,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/middlendian/llima-box/internal/log"
 	"github.com/middlendian/llima-box/pkg/env"
 	"github.com/middlendian/llima-box/pkg/vm"
 	"github.com/spf13/cobra"
@@ -40,7 +41,7 @@ func runList(_ *cobra.Command, _ []string) error {
 	}
 
 	if !exists {
-		fmt.Println("No VM created yet. Use 'llima-box shell' to create one.")
+		log.Info("No VM created yet. Use 'llima-box shell' to create one.")
 		return nil
 	}
 
@@ -51,7 +52,7 @@ func runList(_ *cobra.Command, _ []string) error {
 	}
 
 	if !running {
-		fmt.Println("VM is not running. Use 'llima-box shell' to start it.")
+		log.Info("VM is not running. Use 'llima-box shell' to start it.")
 		return nil
 	}
 
@@ -66,11 +67,11 @@ func runList(_ *cobra.Command, _ []string) error {
 	}
 
 	if len(environments) == 0 {
-		fmt.Println("No environments found. Use 'llima-box shell' to create one.")
+		log.Info("No environments found. Use 'llima-box shell' to create one.")
 		return nil
 	}
 
-	// Print table
+	// Print table to stdout (so it can be captured/redirected)
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	_, _ = fmt.Fprintln(w, "ENVIRONMENT\tPROJECT PATH")
 	_, _ = fmt.Fprintln(w, "-----------\t------------")
@@ -85,7 +86,8 @@ func runList(_ *cobra.Command, _ []string) error {
 
 	_ = w.Flush()
 
-	fmt.Printf("\nTotal: %d environment(s)\n", len(environments))
+	// Summary to stderr
+	log.Plain("\nTotal: %d environment(s)", len(environments))
 
 	return nil
 }

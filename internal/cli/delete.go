@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/middlendian/llima-box/internal/log"
 	"github.com/middlendian/llima-box/pkg/env"
 	"github.com/middlendian/llima-box/pkg/vm"
 	"github.com/spf13/cobra"
@@ -98,8 +99,8 @@ func runDelete(_ *cobra.Command, args []string, force bool) error {
 
 	// Confirm deletion
 	if !force {
-		fmt.Printf("Delete environment '%s' for project '%s'?\n", envName, projectPath)
-		fmt.Print("This will terminate all processes and remove all data. Continue? (y/N): ")
+		log.Warning("Delete environment '%s' for project '%s'?", envName, projectPath)
+		log.Plain("This will terminate all processes and remove all data. Continue? (y/N): ")
 
 		reader := bufio.NewReader(os.Stdin)
 		response, err := reader.ReadString('\n')
@@ -109,18 +110,18 @@ func runDelete(_ *cobra.Command, args []string, force bool) error {
 
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
-			fmt.Println("Cancelled.")
+			log.Info("Cancelled")
 			return nil
 		}
 	}
 
 	// Delete environment
-	fmt.Printf("Deleting environment %s...\n", envName)
+	log.Info("Deleting environment %s...", envName)
 	if err := envManager.Delete(ctx, envName); err != nil {
 		return fmt.Errorf("failed to delete environment: %w", err)
 	}
 
-	fmt.Println("Environment deleted successfully.")
+	log.Success("Environment deleted successfully")
 
 	return nil
 }

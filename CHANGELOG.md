@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Colored, structured logging with INFO/SUCCESS/WARNING/ERROR levels
+- Informational messages now output to stderr (allows stdout capture for data)
+
 ### Fixed
 
 - JSON parsing error when `limactl list --json` returns a single instance object instead of an array

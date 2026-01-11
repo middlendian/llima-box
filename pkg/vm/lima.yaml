@@ -77,6 +77,9 @@ provision:
         mount --bind /sys /tmp/isolated-root/sys
         mount --bind /dev /tmp/isolated-root/dev
 
+        # Mount devpts for PTY support    
+        mount -t devpts devpts /tmp/isolated-root/dev/pts -o newinstance,ptmxmode=0666
+
         # Create project path structure
         project_path="'"$PROJECT_PATH"'"
         parent_path="$(dirname "$project_path")"

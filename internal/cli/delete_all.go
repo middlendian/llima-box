@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/middlendian/llima-box/internal/log"
 	"github.com/middlendian/llima-box/pkg/env"
 	"github.com/middlendian/llima-box/pkg/vm"
 	"github.com/spf13/cobra"
@@ -37,6 +38,7 @@ Examples:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runDeleteAll(cmd, args, force)
 		},
+		SilenceUsage: true,
 	}
 
 	cmd.Flags().BoolVarP(&force, "force", "f", false, "Delete without confirmation")
@@ -54,7 +56,7 @@ func runDeleteAll(_ *cobra.Command, _ []string, force bool) error {
 	}
 
 	if !exists {
-		fmt.Println("No VM exists. Nothing to delete.")
+		log.Info("No VM exists. Nothing to delete.")
 		return nil
 	}
 
@@ -79,25 +81,25 @@ func runDeleteAll(_ *cobra.Command, _ []string, force bool) error {
 	}
 
 	if len(environments) == 0 {
-		fmt.Println("No environments to delete.")
+		log.Info("No environments to delete.")
 		return nil
 	}
 
 	// Show environments
-	fmt.Printf("Found %d environment(s):\n", len(environments))
+	log.Info("Found %d environment(s):", len(environments))
 	for _, e := range environments {
 		projectPath := e.ProjectPath
 		if projectPath == "" {
 			projectPath = "(unknown)"
 		}
-		fmt.Printf("  - %s [%s]\n", e.Name, projectPath)
+		log.Plain("  - %s [%s]", e.Name, projectPath)
 	}
-	fmt.Println()
+	log.Plain("")
 
 	// Confirm deletion
 	if !force {
-		fmt.Printf("Delete ALL %d environment(s)?\n", len(environments))
-		fmt.Print("This will terminate all processes and remove all data. Continue? (y/N): ")
+		log.Warning("Delete ALL %d environment(s)?", len(environments))
+		log.Plain("This will terminate all processes and remove all data. Continue? (y/N): ")
 
 		reader := bufio.NewReader(os.Stdin)
 		response, err := reader.ReadString('\n')
@@ -107,33 +109,32 @@ func runDeleteAll(_ *cobra.Command, _ []string, force bool) error {
 
 		response = strings.TrimSpace(strings.ToLower(response))
 		if response != "y" && response != "yes" {
-			fmt.Println("Cancelled.")
+			log.Info("Cancelled")
 			return nil
 		}
 	}
 
 	// Delete all environments
-	fmt.Println("Deleting environments...")
+	log.Info("Deleting environments...")
 	successCount := 0
 	failCount := 0
 
 	for _, e := range environments {
-		fmt.Printf("  Deleting %s... ", e.Name)
+		log.Plain("  Deleting %s... ", e.Name)
 		if err := envManager.Delete(ctx, e.Name); err != nil {
-			fmt.Printf("FAILED: %v\n", err)
+			log.Error("FAILED: %v", err)
 			failCount++
 		} else {
-			fmt.Println("OK")
+			log.Success("OK")
 			successCount++
 		}
 	}
 
-	fmt.Printf("\nDeleted %d of %d environment(s)", successCount, len(environments))
+	log.Plain("\nDeleted %d of %d environment(s)", successCount, len(environments))
 	if failCount > 0 {
-		fmt.Printf(" (%d failed)", failCount)
+		log.Warning("%d failed", failCount)
 		return fmt.Errorf("failed to delete %d environment(s)", failCount)
 	}
-	fmt.Println()
 
 	return nil
 }

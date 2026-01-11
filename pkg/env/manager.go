@@ -271,8 +271,12 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 		env.ProjectPath,
 	)
 
-	_, err := m.sshClient.ExecContext(ctx, cmd)
+	output, err := m.sshClient.ExecContext(ctx, cmd)
 	if err != nil {
+		// Include the actual command output in the error message
+		if output != "" {
+			return fmt.Errorf("failed to create namespace: %w\nOutput: %s", err, output)
+		}
 		return fmt.Errorf("failed to create namespace: %w", err)
 	}
 

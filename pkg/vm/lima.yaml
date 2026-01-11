@@ -163,7 +163,7 @@ provision:
     #!/bin/bash
     set -eux -o pipefail
 
-    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh" | sudo tee /etc/sudoers.d/lima-environments
+    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh, /usr/local/bin/sandbox.sh, /usr/bin/pkill, /usr/bin/nsenter, /usr/bin/findmnt" | sudo tee /etc/sudoers.d/lima-environments
     sudo chmod 440 /etc/sudoers.d/lima-environments
 
 probes:

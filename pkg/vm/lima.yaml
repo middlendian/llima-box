@@ -57,6 +57,7 @@ provision:
     echo "Creating persistent namespace for $ENV_NAME at $PROJECT_PATH"
 
     # Start namespace process in background
+    # Redirect stdout/stderr to /dev/null to prevent SSH session from waiting
     unshare --mount --propagation private bash -c '
         # Make all mounts private to avoid propagation
         mount --make-rprivate /
@@ -94,7 +95,7 @@ provision:
 
         # Run sleep to keep namespace alive
         chroot /tmp/isolated-root sleep infinity
-    ' &
+    ' >/dev/null 2>&1 &
     UNSHARE_PID=$!
 
     echo "Namespace process started with PID: $UNSHARE_PID"
@@ -163,8 +164,9 @@ provision:
         exit 1
     fi
 
-    # Enter the namespace using the PID
-    nsenter --mount="/proc/$NS_PID/ns/mnt" bash -c "cd '$PROJECT_PATH' && exec \"\$@\"" -- "$@"
+    # Enter the namespace using the PID and switch to the environment user
+    # Note: We use 'su -l' to get a login shell with the user's environment
+    nsenter --mount="/proc/$NS_PID/ns/mnt" su -l "$ENV_NAME" -c "cd '$PROJECT_PATH' && exec \"\$@\"" -- "$@"
     SCRIPT_EOF
 
     chmod +x /usr/local/bin/sandbox.sh
@@ -175,7 +177,7 @@ provision:
     #!/bin/bash
     set -eux -o pipefail
 
-    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh, /usr/local/bin/sandbox.sh, /usr/bin/pkill, /usr/bin/nsenter, /usr/bin/findmnt, /usr/bin/mount, /usr/bin/mountpoint" | sudo tee /etc/sudoers.d/lima-environments
+    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh, /usr/local/bin/sandbox.sh, /usr/bin/pkill, /usr/bin/nsenter, /usr/bin/findmnt, /usr/bin/mount, /usr/bin/mountpoint, /usr/bin/su" | sudo tee /etc/sudoers.d/lima-environments
     sudo chmod 440 /etc/sudoers.d/lima-environments
 
 probes:

@@ -287,16 +287,15 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 		return fmt.Errorf("failed to create namespace: %w", err)
 	}
 
-	// Wait a bit for namespace to be ready
-	time.Sleep(3 * time.Second)
-
 	// Verify namespace PID file exists
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Verifying namespace PID file...\n")
 	checkCmd := fmt.Sprintf("test -f %s", env.NamespacePIDFile)
 	_, err = m.sshClient.ExecContext(ctx, checkCmd)
 	if err != nil {
 		return fmt.Errorf("namespace PID file not created: %s", env.NamespacePIDFile)
 	}
 
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace ready\n")
 	return nil
 }
 

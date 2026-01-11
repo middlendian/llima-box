@@ -31,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VM provisioning hanging indefinitely - removed non-essential zsh and mise installation that blocked SSH startup
 - Shell failing with "No such file or directory" - changed default shell from zsh to bash
 - Command arguments incorrectly parsed as paths - fixed handling of `--` separator for commands like `llima-box shell -- bash`
+- Shell exiting immediately after namespace creation - added `-i` flag to force bash interactive mode
 
 ## [0.3.0]
 

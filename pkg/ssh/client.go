@@ -244,7 +244,10 @@ func (c *Client) ExecInteractive(cmd string) error {
 
 	// Get terminal size
 	fd := int(os.Stdin.Fd())
-	if term.IsTerminal(fd) {
+	isTerminal := term.IsTerminal(fd)
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: stdin is terminal: %v\n", isTerminal)
+
+	if isTerminal {
 		// Request pseudo terminal
 		state, err := term.MakeRaw(fd)
 		if err != nil {

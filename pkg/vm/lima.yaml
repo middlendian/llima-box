@@ -56,12 +56,15 @@ provision:
 
     echo "Creating persistent namespace for $ENV_NAME at $PROJECT_PATH"
 
-    # Pre-create the namespace file - unshare requires it to exist
+    # Create the namespace file - must exist before bind mount
     touch "$NS_FILE"
 
-    # Start namespace in background and capture PID
-    unshare --mount="$NS_FILE" --propagation private bash -c '
+    # Start namespace process in background
+    unshare --mount --propagation private bash -c '
+        # Make all mounts private to avoid propagation
         mount --make-rprivate /
+
+        # Create isolated root
         mkdir -p /tmp/isolated-root
 
         # Mount system directories (read-only)
@@ -92,21 +95,29 @@ provision:
         mkdir -p "/tmp/isolated-root/home/'"$ENV_NAME"'"
         mount --bind "/home/'"$ENV_NAME"'" "/tmp/isolated-root/home/'"$ENV_NAME"'"
 
+        # Run sleep to keep namespace alive
         chroot /tmp/isolated-root sleep infinity
     ' &
     UNSHARE_PID=$!
 
-    # Wait for namespace file to be created (with timeout)
-    MAX_WAIT=10
-    WAIT_COUNT=0
-    while [ ! -s "$NS_FILE" ] && [ $WAIT_COUNT -lt $MAX_WAIT ]; do
-        sleep 0.5
-        WAIT_COUNT=$((WAIT_COUNT + 1))
-    done
+    echo "Namespace process started with PID: $UNSHARE_PID"
 
-    # Verify namespace file was created
-    if [ ! -s "$NS_FILE" ]; then
-        echo "Error: Namespace file was not created after ${MAX_WAIT} seconds" >&2
+    # Wait for namespace to be created
+    sleep 1
+
+    # Bind-mount the namespace from /proc to our persistent file
+    if [ ! -f "/proc/$UNSHARE_PID/ns/mnt" ]; then
+        echo "Error: Namespace not found at /proc/$UNSHARE_PID/ns/mnt" >&2
+        kill $UNSHARE_PID 2>/dev/null || true
+        exit 1
+    fi
+
+    # Bind mount the namespace to make it persistent
+    mount --bind "/proc/$UNSHARE_PID/ns/mnt" "$NS_FILE"
+
+    # Verify the mount succeeded
+    if ! mountpoint -q "$NS_FILE"; then
+        echo "Error: Failed to bind-mount namespace to $NS_FILE" >&2
         kill $UNSHARE_PID 2>/dev/null || true
         exit 1
     fi
@@ -117,7 +128,7 @@ provision:
         exit 1
     fi
 
-    echo "Namespace created successfully (PID: $UNSHARE_PID)"
+    echo "Namespace created successfully (PID: $UNSHARE_PID, mounted at: $NS_FILE)"
     SCRIPT_EOF
 
     chmod +x /usr/local/bin/create-namespace.sh
@@ -163,7 +174,7 @@ provision:
     #!/bin/bash
     set -eux -o pipefail
 
-    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh, /usr/local/bin/sandbox.sh, /usr/bin/pkill, /usr/bin/nsenter, /usr/bin/findmnt" | sudo tee /etc/sudoers.d/lima-environments
+    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /bin/mkdir, /bin/chown, /usr/local/bin/create-namespace.sh, /usr/local/bin/sandbox.sh, /usr/bin/pkill, /usr/bin/nsenter, /usr/bin/findmnt, /usr/bin/mount, /usr/bin/mountpoint" | sudo tee /etc/sudoers.d/lima-environments
     sudo chmod 440 /etc/sudoers.d/lima-environments
 
 probes:

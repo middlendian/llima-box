@@ -18,12 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - JSON parsing error when `limactl list --json` returns a single instance object instead of an array
-- Namespace creation failing when namespace file doesn't exist prior to `unshare` command
+- Namespace creation failing with "Invalid argument" - now properly bind-mounts namespace from /proc
 - Sudoers configuration using hardcoded 'lima' user instead of actual VM user
 - Error propagation from background namespace process - now properly detects failures
 - Usage/help text printing on every error - now shows only error messages
 - Error reporting for namespace creation failures - now captures and displays actual command output
-- Missing sudo permissions for sandbox.sh, pkill, nsenter, and findmnt commands
+- Missing sudo permissions for sandbox.sh, pkill, nsenter, findmnt, mount, and mountpoint commands
 
 ## [0.3.0]
 

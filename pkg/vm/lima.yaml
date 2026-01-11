@@ -47,7 +47,7 @@ provision:
 
     ENV_NAME="$1"
     PROJECT_PATH="$2"
-    NS_FILE="/home/$ENV_NAME/namespace.mnt"
+    PID_FILE="/home/$ENV_NAME/namespace.pid"
 
     if [ -z "$ENV_NAME" ] || [ -z "$PROJECT_PATH" ]; then
         echo "Usage: $0 <env_name> <project_path>"
@@ -55,9 +55,6 @@ provision:
     fi
 
     echo "Creating persistent namespace for $ENV_NAME at $PROJECT_PATH"
-
-    # Create the namespace file - must exist before bind mount
-    touch "$NS_FILE"
 
     # Start namespace process in background
     unshare --mount --propagation private bash -c '
@@ -105,19 +102,9 @@ provision:
     # Wait for namespace to be created
     sleep 1
 
-    # Bind-mount the namespace from /proc to our persistent file
+    # Verify the namespace exists
     if [ ! -f "/proc/$UNSHARE_PID/ns/mnt" ]; then
         echo "Error: Namespace not found at /proc/$UNSHARE_PID/ns/mnt" >&2
-        kill $UNSHARE_PID 2>/dev/null || true
-        exit 1
-    fi
-
-    # Bind mount the namespace to make it persistent
-    mount --bind "/proc/$UNSHARE_PID/ns/mnt" "$NS_FILE"
-
-    # Verify the mount succeeded
-    if ! mountpoint -q "$NS_FILE"; then
-        echo "Error: Failed to bind-mount namespace to $NS_FILE" >&2
         kill $UNSHARE_PID 2>/dev/null || true
         exit 1
     fi
@@ -128,7 +115,11 @@ provision:
         exit 1
     fi
 
-    echo "Namespace created successfully (PID: $UNSHARE_PID, mounted at: $NS_FILE)"
+    # Store the PID for later use
+    echo "$UNSHARE_PID" > "$PID_FILE"
+    chown "$ENV_NAME:$ENV_NAME" "$PID_FILE"
+
+    echo "Namespace created successfully (PID: $UNSHARE_PID, PID file: $PID_FILE)"
     SCRIPT_EOF
 
     chmod +x /usr/local/bin/create-namespace.sh
@@ -147,7 +138,7 @@ provision:
     PROJECT_PATH="$2"
     shift 2
 
-    NS_FILE="/home/$ENV_NAME/namespace.mnt"
+    PID_FILE="/home/$ENV_NAME/namespace.pid"
 
     if [ -z "$ENV_NAME" ] || [ -z "$PROJECT_PATH" ]; then
         echo "Usage: $0 <env_name> <project_path> [command...]"
@@ -158,12 +149,22 @@ provision:
         set -- zsh
     fi
 
-    if [ ! -f "$NS_FILE" ]; then
-        echo "Error: Namespace file $NS_FILE not found"
+    if [ ! -f "$PID_FILE" ]; then
+        echo "Error: Namespace PID file $PID_FILE not found"
         exit 1
     fi
 
-    nsenter --mount="$NS_FILE" bash -c "cd '$PROJECT_PATH' && exec \"\$@\"" -- "$@"
+    # Read the PID
+    NS_PID=$(cat "$PID_FILE")
+
+    # Verify the process is still running
+    if ! kill -0 "$NS_PID" 2>/dev/null; then
+        echo "Error: Namespace process (PID $NS_PID) is not running"
+        exit 1
+    fi
+
+    # Enter the namespace using the PID
+    nsenter --mount="/proc/$NS_PID/ns/mnt" bash -c "cd '$PROJECT_PATH' && exec \"\$@\"" -- "$@"
     SCRIPT_EOF
 
     chmod +x /usr/local/bin/sandbox.sh

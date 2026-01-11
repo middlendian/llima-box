@@ -24,8 +24,8 @@ type Environment struct {
 	// UserName is the Linux username for this environment (usually same as Name)
 	UserName string
 
-	// NamespaceFile is the path to the namespace mount file
-	NamespaceFile string
+	// NamespacePIDFile is the path to the file containing the namespace process PID
+	NamespacePIDFile string
 }
 
 // Manager handles environment lifecycle operations
@@ -101,10 +101,10 @@ func (m *Manager) Create(ctx context.Context, projectPath string) (*Environment,
 	}
 
 	env := &Environment{
-		Name:          envName,
-		ProjectPath:   absPath,
-		UserName:      envName,
-		NamespaceFile: fmt.Sprintf("/home/%s/namespace.mnt", envName),
+		Name:             envName,
+		ProjectPath:      absPath,
+		UserName:         envName,
+		NamespacePIDFile: fmt.Sprintf("/home/%s/namespace.pid", envName),
 	}
 
 	if exists {
@@ -177,13 +177,13 @@ func (m *Manager) List(ctx context.Context) ([]*Environment, error) {
 		// Try to extract project path from namespace file or home directory
 		// For now, we'll use a placeholder since we don't store the project path
 		// In a production version, we might store metadata in a file
-		nsFile := fmt.Sprintf("%s/namespace.mnt", homeDir)
+		pidFile := fmt.Sprintf("%s/namespace.pid", homeDir)
 
 		env := &Environment{
-			Name:          username,
-			ProjectPath:   "", // Unknown without metadata
-			UserName:      username,
-			NamespaceFile: nsFile,
+			Name:             username,
+			ProjectPath:      "", // Unknown without metadata
+			UserName:         username,
+			NamespacePIDFile: pidFile,
 		}
 
 		envs = append(envs, env)
@@ -290,11 +290,11 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 	// Wait a bit for namespace to be ready
 	time.Sleep(3 * time.Second)
 
-	// Verify namespace file exists
-	checkCmd := fmt.Sprintf("test -f %s", env.NamespaceFile)
+	// Verify namespace PID file exists
+	checkCmd := fmt.Sprintf("test -f %s", env.NamespacePIDFile)
 	_, err = m.sshClient.ExecContext(ctx, checkCmd)
 	if err != nil {
-		return fmt.Errorf("namespace file not created: %s", env.NamespaceFile)
+		return fmt.Errorf("namespace PID file not created: %s", env.NamespacePIDFile)
 	}
 
 	return nil
@@ -315,10 +315,18 @@ func (m *Manager) GetProjectPath(ctx context.Context, envName string) (string, e
 		return "", err
 	}
 
+	// Read the namespace PID
+	pidFile := fmt.Sprintf("/home/%s/namespace.pid", envName)
+	pidOutput, err := m.sshClient.ExecContext(ctx, fmt.Sprintf("cat %s", pidFile))
+	if err != nil {
+		return "", fmt.Errorf("failed to read namespace PID: %w", err)
+	}
+	pid := strings.TrimSpace(pidOutput)
+
 	// Try to find the project path from the namespace mounts
 	// This is a heuristic - look for bind mounts in /proc/mounts
-	cmd := fmt.Sprintf("sudo nsenter --mount=/home/%s/namespace.mnt findmnt -n -o TARGET | grep -E '^/Users|^/home' | grep -v '^/home/%s$' | head -n1 || echo ''",
-		envName, envName)
+	cmd := fmt.Sprintf("sudo nsenter --mount=/proc/%s/ns/mnt findmnt -n -o TARGET | grep -E '^/Users|^/home' | grep -v '^/home/%s$' | head -n1 || echo ''",
+		pid, envName)
 
 	output, err := m.sshClient.ExecContext(ctx, cmd)
 	if err != nil {

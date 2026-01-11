@@ -74,10 +74,10 @@ func TestIsValidEnvironmentName(t *testing.T) {
 
 func TestEnvironmentStruct(t *testing.T) {
 	env := &Environment{
-		Name:          "test-env-a1b2",
-		ProjectPath:   "/Users/test/project",
-		UserName:      "test-env-a1b2",
-		NamespaceFile: "/home/test-env-a1b2/namespace.mnt",
+		Name:             "test-env-a1b2",
+		ProjectPath:      "/Users/test/project",
+		UserName:         "test-env-a1b2",
+		NamespacePIDFile: "/home/test-env-a1b2/namespace.pid",
 	}
 
 	if env.Name != "test-env-a1b2" {
@@ -89,7 +89,7 @@ func TestEnvironmentStruct(t *testing.T) {
 	if env.UserName != "test-env-a1b2" {
 		t.Errorf("Expected UserName to be 'test-env-a1b2', got %s", env.UserName)
 	}
-	if env.NamespaceFile != "/home/test-env-a1b2/namespace.mnt" {
-		t.Errorf("Expected NamespaceFile to be '/home/test-env-a1b2/namespace.mnt', got %s", env.NamespaceFile)
+	if env.NamespacePIDFile != "/home/test-env-a1b2/namespace.pid" {
+		t.Errorf("Expected NamespacePIDFile to be '/home/test-env-a1b2/namespace.pid', got %s", env.NamespacePIDFile)
 	}
 }

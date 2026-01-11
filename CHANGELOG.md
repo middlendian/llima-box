@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Error reporting for namespace creation failures - now captures and displays actual command output
 - Missing sudo permissions for sandbox.sh, pkill, nsenter, findmnt, mount, mountpoint, and su commands
 - Lack of feedback during namespace verification - added debug logging
+- Permission denied error when verifying namespace PID file - verification commands now use sudo
 
 ## [0.3.0]
 

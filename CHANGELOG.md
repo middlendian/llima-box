@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Real-time streaming of namespace creation script output
 - Debug logging for all VM and namespace operations with command execution details
 
+### Changed
+
+- Refactored namespace management to use direct `unshare`/`nsenter` commands instead of embedded shell scripts for better maintainability and debugging
+- Simplified VM provisioning by removing unnecessary script generation, keeping only essential package installation and sudoers configuration
+- Changed namespace PID file location from `/home/<env>/namespace.pid` to `/envs/<env>/namespace.pid` for cleaner organization
+
 ### Fixed
 
 - JSON parsing error when `limactl list --json` returns a single instance object instead of an array

@@ -197,16 +197,22 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 		return err
 	}
 
-	// Build command to execute
-	cmdStr := "bash"
+	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
+
+	// Default to bash if no command specified
+	command := "bash"
 	if len(cmd) > 0 {
-		cmdStr = strings.Join(cmd, " ")
+		command = strings.Join(cmd, " ")
 	}
 
-	// Use the sandbox.sh script created by Lima provisioning
-	sshCmd := fmt.Sprintf("sudo nsenter -t $(cat /envs/%s/namespace.pid) -a '%s'",
+	// Build the nsenter command to enter the namespace and run as the environment user
+	// We use nsenter to enter the mount and PID namespaces, then su to switch to the user
+	sshCmd := fmt.Sprintf(
+		"sudo nsenter --target=$(sudo cat %s) --mount --pid su - %s -c 'cd %s && exec %s'",
+		pidFile,
 		env.Name,
-		cmdStr,
+		env.ProjectPath,
+		command,
 	)
 
 	// Execute interactively
@@ -241,27 +247,32 @@ func (m *Manager) deleteUser(ctx context.Context, username string) error {
 
 // createNamespace creates a persistent namespace for the environment
 func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
-	// Use the create-namespace.sh script created by Lima provisioning
 	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
-	cmd := fmt.Sprintf("sudo mkdir -p /envs/%s && "+
-		"{ sudo unshare --fork --pid --mount --mount-proc --uts --ipc --propagation private bash -c 'sleep infinity' & sudo echo $! > %s; }",
-		env.Name,
-		pidFile,
-	)
 
-	// Log the command being executed
-	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Creating namespace: %s\n", cmd)
+	// Create the /envs directory
+	mkdirCmd := fmt.Sprintf("sudo mkdir -p /envs/%s", env.Name)
+	if _, err := m.sshClient.ExecContext(ctx, mkdirCmd); err != nil {
+		return fmt.Errorf("failed to create namespace directory: %w", err)
+	}
 
-	// Use streaming execution to see output in real-time
-	err := m.sshClient.ExecContextStreaming(ctx, cmd)
-	if err != nil {
+	// Build the unshare command with proper namespace setup
+	// This creates mount and PID namespaces, runs a sleep process to keep them alive
+	unshareCmd := fmt.Sprintf(`sudo unshare --mount --pid --fork --propagation private bash -c 'sleep infinity' >/dev/null 2>&1 & echo $! | sudo tee %s >/dev/null`, pidFile)
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Creating namespace: %s\n", unshareCmd)
+
+	// Execute the unshare command
+	if _, err := m.sshClient.ExecContext(ctx, unshareCmd); err != nil {
 		return fmt.Errorf("failed to create namespace: %w", err)
 	}
+
+	// Wait a moment for the namespace to stabilize
+	time.Sleep(500 * time.Millisecond)
 
 	// Verify namespace PID file exists
 	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Verifying namespace PID file at: %s\n", pidFile)
 
-	// Try to read the PID file (use sudo since the file is owned by root or the env user)
+	// Read the PID file
 	catCmd := fmt.Sprintf("sudo cat %s 2>&1", pidFile)
 	catOutput, catErr := m.sshClient.ExecContext(ctx, catCmd)
 	if catErr != nil {
@@ -300,7 +311,7 @@ func (m *Manager) GetProjectPath(ctx context.Context, envName string) (string, e
 	}
 
 	// Read the namespace PID
-	pidFile := fmt.Sprintf("/home/%s/namespace.pid", envName)
+	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", envName)
 	pidOutput, err := m.sshClient.ExecContext(ctx, fmt.Sprintf("cat %s", pidFile))
 	if err != nil {
 		return "", fmt.Errorf("failed to read namespace PID: %w", err)

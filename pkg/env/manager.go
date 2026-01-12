@@ -206,9 +206,10 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 	}
 
 	// Build the nsenter command to enter the namespace and run as the environment user
-	// We use nsenter to enter the mount and PID namespaces, then su to switch to the user
+	// We only enter the mount namespace to avoid terminal control issues with PID namespace
+	// The mount namespace provides the filesystem isolation we need
 	sshCmd := fmt.Sprintf(
-		"sudo nsenter --target=$(sudo cat %s) --mount --pid su - %s -c 'cd %s && exec %s'",
+		"sudo nsenter --target=$(sudo cat %s) --mount su - %s -c 'cd %s && exec %s'",
 		pidFile,
 		env.Name,
 		env.ProjectPath,

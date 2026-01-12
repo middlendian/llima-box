@@ -20,12 +20,6 @@ type Environment struct {
 
 	// ProjectPath is the absolute path to the project directory
 	ProjectPath string
-
-	// UserName is the Linux username for this environment (usually same as Name)
-	UserName string
-
-	// NamespacePIDFile is the path to the file containing the namespace process PID
-	NamespacePIDFile string
 }
 
 // Manager handles environment lifecycle operations
@@ -101,10 +95,8 @@ func (m *Manager) Create(ctx context.Context, projectPath string) (*Environment,
 	}
 
 	env := &Environment{
-		Name:             envName,
-		ProjectPath:      absPath,
-		UserName:         envName,
-		NamespacePIDFile: fmt.Sprintf("/home/%s/namespace.pid", envName),
+		Name:        envName,
+		ProjectPath: absPath,
 	}
 
 	if exists {
@@ -134,7 +126,7 @@ func (m *Manager) Exists(ctx context.Context, envName string) (bool, error) {
 	}
 
 	// Check if user account exists
-	cmd := fmt.Sprintf("id %s", envName)
+	cmd := fmt.Sprintf("id %[1]s && [ -e /envs/%[1]s/namespace.pid ] && kill -0 $(cat /envs/%[1]s/namespace.pid)", envName)
 	_, err := m.sshClient.ExecContext(ctx, cmd)
 	return err == nil, nil
 }
@@ -145,12 +137,10 @@ func (m *Manager) List(ctx context.Context) ([]*Environment, error) {
 		return nil, err
 	}
 
-	// Get all users with UID >= 1000 (non-system users)
-	// Format: username:uid:home
-	cmd := "getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 {print $1\":\"$3\":\"$6}'"
+	cmd := "find /envs/. -type d -maxdepth 1 -mindepth 1 | xargs basename"
 	output, err := m.sshClient.ExecContext(ctx, cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list users: %w", err)
+		return nil, fmt.Errorf("failed to list environments: %w", err)
 	}
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")
@@ -161,29 +151,9 @@ func (m *Manager) List(ctx context.Context) ([]*Environment, error) {
 			continue
 		}
 
-		parts := strings.Split(line, ":")
-		if len(parts) < 3 {
-			continue
-		}
-
-		username := parts[0]
-		homeDir := parts[2]
-
-		// Skip the default 'lima' user
-		if username == "lima" {
-			continue
-		}
-
-		// Try to extract project path from namespace file or home directory
-		// For now, we'll use a placeholder since we don't store the project path
-		// In a production version, we might store metadata in a file
-		pidFile := fmt.Sprintf("%s/namespace.pid", homeDir)
-
 		env := &Environment{
-			Name:             username,
-			ProjectPath:      "", // Unknown without metadata
-			UserName:         username,
-			NamespacePIDFile: pidFile,
+			Name:        line,
+			ProjectPath: "", // Unknown without metadata
 		}
 
 		envs = append(envs, env)
@@ -234,9 +204,8 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 	}
 
 	// Use the sandbox.sh script created by Lima provisioning
-	sshCmd := fmt.Sprintf("sudo /usr/local/bin/sandbox.sh %s %s %s",
-		env.UserName,
-		env.ProjectPath,
+	sshCmd := fmt.Sprintf("sudo nsenter -t $(cat /envs/%s/namespace.pid) -a '%s'",
+		env.Name,
 		cmdStr,
 	)
 
@@ -273,9 +242,11 @@ func (m *Manager) deleteUser(ctx context.Context, username string) error {
 // createNamespace creates a persistent namespace for the environment
 func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 	// Use the create-namespace.sh script created by Lima provisioning
-	cmd := fmt.Sprintf("sudo /usr/local/bin/create-namespace.sh %s %s",
-		env.UserName,
-		env.ProjectPath,
+	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
+	cmd := fmt.Sprintf("sudo mkdir -p /envs/%s && "+
+		"{ sudo unshare --fork --pid --mount --mount-proc --uts --ipc --propagation private bash -c 'sleep infinity' & sudo echo $! > %s; }",
+		env.Name,
+		pidFile,
 	)
 
 	// Log the command being executed
@@ -288,14 +259,14 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 	}
 
 	// Verify namespace PID file exists
-	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Verifying namespace PID file at: %s\n", env.NamespacePIDFile)
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Verifying namespace PID file at: %s\n", pidFile)
 
 	// Try to read the PID file (use sudo since the file is owned by root or the env user)
-	catCmd := fmt.Sprintf("sudo cat %s 2>&1", env.NamespacePIDFile)
+	catCmd := fmt.Sprintf("sudo cat %s 2>&1", pidFile)
 	catOutput, catErr := m.sshClient.ExecContext(ctx, catCmd)
 	if catErr != nil {
 		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Failed to read PID file: %v\nOutput: %s\n", catErr, catOutput)
-		return fmt.Errorf("namespace PID file not created: %s (error: %w, output: %s)", env.NamespacePIDFile, catErr, catOutput)
+		return fmt.Errorf("namespace PID file not created: %s (error: %w, output: %s)", pidFile, catErr, catOutput)
 	}
 
 	pid := strings.TrimSpace(catOutput)

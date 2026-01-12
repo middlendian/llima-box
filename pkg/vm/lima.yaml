@@ -53,7 +53,7 @@ provision:
 
     # Start namespace process in background
     # Redirect stdout/stderr to /dev/null to prevent SSH session from waiting
-    unshare --mount --propagation private bash -c '
+    unshare --mount --pid --fork --propagation private bash -c '
         # Make all mounts private to avoid propagation
         mount --make-rprivate /
 
@@ -73,12 +73,16 @@ provision:
         mkdir -p /tmp/isolated-root/{tmp,var,proc,sys,dev}
         mount --bind /tmp /tmp/isolated-root/tmp
         mount --bind /var /tmp/isolated-root/var
-        mount --bind /proc /tmp/isolated-root/proc
         mount --bind /sys /tmp/isolated-root/sys
-        mount --bind /dev /tmp/isolated-root/dev
 
-        # Mount devpts for PTY support    
+        # Set up /dev properly with PTY support
+        mkdir -p /tmp/isolated-root/dev/{pts,shm}
+        mount --bind /dev /tmp/isolated-root/dev
         mount -t devpts devpts /tmp/isolated-root/dev/pts -o newinstance,ptmxmode=0666
+        mount -t tmpfs tmpfs /tmp/isolated-root/dev/shm
+
+        # Mount /proc (important for PID namespace)
+        mount -t proc proc /tmp/isolated-root/proc
 
         # Create project path structure
         project_path="'"$PROJECT_PATH"'"
@@ -160,7 +164,10 @@ provision:
 
     # Enter the namespace using the PID and switch to the environment user
     # Note: We use 'su -l' to get a login shell with the user's environment
-    nsenter --mount="/proc/$NS_PID/ns/mnt" su -l "$ENV_NAME" -c "cd '$PROJECT_PATH' && exec \"\$0\" \"\$@\"" -- "$@"
+    # Note: We Use setsid to create a new session
+    nsenter --mount="/proc/$NS_PID/ns/mnt" --pid="/proc/$NS_PID/ns/pid" \
+      setsid su -l "$ENV_NAME" -c "cd '$PROJECT_PATH' && exec \"\$0\" \"\$@\"" -- "$@"
+
     SCRIPT_EOF
 
     chmod +x /usr/local/bin/sandbox.sh

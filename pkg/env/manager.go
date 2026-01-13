@@ -203,10 +203,10 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 	// The working directory is /workspace (where the project is bind-mounted)
 	var sshCmd string
 	if len(cmd) == 0 {
-		// Interactive shell - start bash in /workspace without login shell
-		// This ensures we start in the project directory, not the home directory
+		// Interactive shell - start bash in /workspace with interactive flag
+		// This ensures we start in the project directory with proper terminal control
 		sshCmd = fmt.Sprintf(
-			"sudo nsenter --target=$(sudo cat %s) --mount su %s --command 'cd /workspace && exec bash'",
+			"sudo nsenter --target=$(sudo cat %s) --mount su %s --command 'cd /workspace && exec bash -i'",
 			pidFile,
 			env.Name,
 		)

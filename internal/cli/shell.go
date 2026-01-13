@@ -113,11 +113,11 @@ func parseShellArgs(cmd *cobra.Command, args []string) (string, []string, error)
 				return "", nil, fmt.Errorf("failed to get current directory: %w", err)
 			}
 			projectPath = cwd
-			command = []string{"bash"}
+			command = []string{}
 		} else {
 			// One arg: treat as path, use default shell
 			projectPath = args[0]
-			command = []string{"bash"}
+			command = []string{}
 		}
 	} else {
 		// Has "--" separator
@@ -133,10 +133,9 @@ func parseShellArgs(cmd *cobra.Command, args []string) (string, []string, error)
 			// "path -- command": args before dashIndex are path, after are command
 			projectPath = args[0]
 			command = args[dashIndex:]
-		}
-
-		if len(command) == 0 {
-			return "", nil, fmt.Errorf("no command specified after '--'")
+			if len(command) == 0 {
+				return "", nil, fmt.Errorf("no command specified after '--'")
+			}
 		}
 	}
 

@@ -200,13 +200,11 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
 
 	// Build the nsenter command to enter the namespace and run as the environment user
-	// Use --wdir to set working directory, avoiding the need for 'cd' in the command
-	// For interactive shells, don't use 'su -c' which prevents proper terminal setup
 	var sshCmd string
-	if len(cmd) == 0 || (len(cmd) == 1 && cmd[0] == "bash") {
+	if len(cmd) == 0 {
 		// Interactive shell - don't use -c, let su start a proper login shell
 		sshCmd = fmt.Sprintf(
-			"sudo nsenter --target=$(sudo cat %s) --mount --wdir=%s su - %s",
+			"sudo nsenter --target=$(sudo cat %s) --mount --wdns=%s su --login %s",
 			pidFile,
 			env.ProjectPath,
 			env.Name,
@@ -215,7 +213,7 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 		// Specific command - use -c to execute it
 		command := strings.Join(cmd, " ")
 		sshCmd = fmt.Sprintf(
-			"sudo nsenter --target=$(sudo cat %s) --mount --wdir=%s su - %s -c %q",
+			"sudo nsenter --target=$(sudo cat %s) --mount --wdns=%s su --login %s --command %q",
 			pidFile,
 			env.ProjectPath,
 			env.Name,

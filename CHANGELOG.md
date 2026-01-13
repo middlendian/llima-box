@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell failing with "No such file or directory" - changed default shell from zsh to bash
 - Command arguments incorrectly parsed as paths - fixed handling of `--` separator for commands like `llima-box shell -- bash`
 - Interactive shell errors about terminal process group - removed PID namespace entry to avoid terminal control issues
+- Filesystem isolation not working - environments could see files from other environments. Now each environment has an isolated view with only its project directory bind-mounted to `/workspace`
+- Working directory not set correctly - shells always started in home directory instead of project directory. Now shells start in `/workspace` where the project is mounted
 
 ## [0.3.0]
 

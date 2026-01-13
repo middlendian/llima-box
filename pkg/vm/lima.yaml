@@ -36,6 +36,6 @@ provision:
     #!/bin/bash
     set -eux -o pipefail
 
-    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /usr/bin/unshare, /usr/bin/nsenter, /usr/bin/mount, /usr/bin/umount, /usr/bin/pkill, /usr/bin/kill, /usr/bin/chown, /bin/mkdir, /usr/bin/su" | sudo tee /etc/sudoers.d/lima-environments
+    echo "$USER ALL=(ALL) NOPASSWD: /usr/sbin/useradd, /usr/sbin/userdel, /usr/bin/unshare, /usr/bin/nsenter, /usr/bin/mount, /usr/bin/umount, /usr/bin/pkill, /usr/bin/kill, /usr/bin/chown, /bin/mkdir, /usr/bin/su, /usr/bin/cat, /usr/bin/tee" | sudo tee /etc/sudoers.d/lima-environments
     sudo chmod 440 /etc/sudoers.d/lima-environments
 

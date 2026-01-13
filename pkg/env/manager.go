@@ -199,22 +199,29 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 
 	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
 
-	// Default to bash if no command specified
-	command := "bash"
-	if len(cmd) > 0 {
-		command = strings.Join(cmd, " ")
-	}
-
 	// Build the nsenter command to enter the namespace and run as the environment user
-	// We only enter the mount namespace to avoid terminal control issues with PID namespace
-	// The mount namespace provides the filesystem isolation we need
-	sshCmd := fmt.Sprintf(
-		"sudo nsenter --target=$(sudo cat %s) --mount su - %s -c 'cd %s && exec %s'",
-		pidFile,
-		env.Name,
-		env.ProjectPath,
-		command,
-	)
+	// Use --wdir to set working directory, avoiding the need for 'cd' in the command
+	// For interactive shells, don't use 'su -c' which prevents proper terminal setup
+	var sshCmd string
+	if len(cmd) == 0 || (len(cmd) == 1 && cmd[0] == "bash") {
+		// Interactive shell - don't use -c, let su start a proper login shell
+		sshCmd = fmt.Sprintf(
+			"sudo nsenter --target=$(sudo cat %s) --mount --wdir=%s su - %s",
+			pidFile,
+			env.ProjectPath,
+			env.Name,
+		)
+	} else {
+		// Specific command - use -c to execute it
+		command := strings.Join(cmd, " ")
+		sshCmd = fmt.Sprintf(
+			"sudo nsenter --target=$(sudo cat %s) --mount --wdir=%s su - %s -c %q",
+			pidFile,
+			env.ProjectPath,
+			env.Name,
+			command,
+		)
+	}
 
 	// Execute interactively
 	return m.sshClient.ExecInteractive(sshCmd)

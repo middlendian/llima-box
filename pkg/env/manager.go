@@ -3,6 +3,7 @@ package env
 import (
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -19,12 +20,6 @@ type Environment struct {
 
 	// ProjectPath is the absolute path to the project directory
 	ProjectPath string
-
-	// UserName is the Linux username for this environment (usually same as Name)
-	UserName string
-
-	// NamespaceFile is the path to the namespace mount file
-	NamespaceFile string
 }
 
 // Manager handles environment lifecycle operations
@@ -100,10 +95,8 @@ func (m *Manager) Create(ctx context.Context, projectPath string) (*Environment,
 	}
 
 	env := &Environment{
-		Name:          envName,
-		ProjectPath:   absPath,
-		UserName:      envName,
-		NamespaceFile: fmt.Sprintf("/home/%s/namespace.mnt", envName),
+		Name:        envName,
+		ProjectPath: absPath,
 	}
 
 	if exists {
@@ -133,7 +126,7 @@ func (m *Manager) Exists(ctx context.Context, envName string) (bool, error) {
 	}
 
 	// Check if user account exists
-	cmd := fmt.Sprintf("id %s", envName)
+	cmd := fmt.Sprintf("id %[1]s && [ -e /envs/%[1]s/namespace.pid ] && kill -0 $(cat /envs/%[1]s/namespace.pid)", envName)
 	_, err := m.sshClient.ExecContext(ctx, cmd)
 	return err == nil, nil
 }
@@ -144,12 +137,10 @@ func (m *Manager) List(ctx context.Context) ([]*Environment, error) {
 		return nil, err
 	}
 
-	// Get all users with UID >= 1000 (non-system users)
-	// Format: username:uid:home
-	cmd := "getent passwd | awk -F: '$3 >= 1000 && $3 < 60000 {print $1\":\"$3\":\"$6}'"
+	cmd := "find /envs/. -type d -maxdepth 1 -mindepth 1 | xargs basename"
 	output, err := m.sshClient.ExecContext(ctx, cmd)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list users: %w", err)
+		return nil, fmt.Errorf("failed to list environments: %w", err)
 	}
 
 	lines := strings.Split(strings.TrimSpace(output), "\n")
@@ -160,29 +151,9 @@ func (m *Manager) List(ctx context.Context) ([]*Environment, error) {
 			continue
 		}
 
-		parts := strings.Split(line, ":")
-		if len(parts) < 3 {
-			continue
-		}
-
-		username := parts[0]
-		homeDir := parts[2]
-
-		// Skip the default 'lima' user
-		if username == "lima" {
-			continue
-		}
-
-		// Try to extract project path from namespace file or home directory
-		// For now, we'll use a placeholder since we don't store the project path
-		// In a production version, we might store metadata in a file
-		nsFile := fmt.Sprintf("%s/namespace.mnt", homeDir)
-
 		env := &Environment{
-			Name:          username,
-			ProjectPath:   "", // Unknown without metadata
-			UserName:      username,
-			NamespaceFile: nsFile,
+			Name:        line,
+			ProjectPath: "", // Unknown without metadata
 		}
 
 		envs = append(envs, env)
@@ -226,18 +197,29 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 		return err
 	}
 
-	// Build command to execute
-	cmdStr := "zsh"
-	if len(cmd) > 0 {
-		cmdStr = strings.Join(cmd, " ")
-	}
+	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
 
-	// Use the sandbox.sh script created by Lima provisioning
-	sshCmd := fmt.Sprintf("sudo /usr/local/bin/sandbox.sh %s %s %s",
-		env.UserName,
-		env.ProjectPath,
-		cmdStr,
-	)
+	// Build the nsenter command to enter the namespace and run as the environment user
+	var sshCmd string
+	if len(cmd) == 0 {
+		// Interactive shell - don't use -c, let su start a proper login shell
+		sshCmd = fmt.Sprintf(
+			"sudo nsenter --target=$(sudo cat %s) --mount --wdns=%s su --login %s",
+			pidFile,
+			env.ProjectPath,
+			env.Name,
+		)
+	} else {
+		// Specific command - use -c to execute it
+		command := strings.Join(cmd, " ")
+		sshCmd = fmt.Sprintf(
+			"sudo nsenter --target=$(sudo cat %s) --mount --wdns=%s su --login %s --command %q",
+			pidFile,
+			env.ProjectPath,
+			env.Name,
+			command,
+		)
+	}
 
 	// Execute interactively
 	return m.sshClient.ExecInteractive(sshCmd)
@@ -246,9 +228,15 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 // createUser creates a Linux user account for the environment
 func (m *Manager) createUser(ctx context.Context, username string) error {
 	// Create user with home directory
-	cmd := fmt.Sprintf("sudo useradd -m -s /bin/zsh %s", username)
-	_, err := m.sshClient.ExecContext(ctx, cmd)
+	cmd := fmt.Sprintf("sudo useradd -m -s /bin/bash %s", username)
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Creating user: %s\n", cmd)
+
+	output, err := m.sshClient.ExecContext(ctx, cmd)
 	if err != nil {
+		if output != "" {
+			fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: User creation output: %s\n", output)
+		}
 		return fmt.Errorf("failed to create user account: %w", err)
 	}
 
@@ -265,27 +253,51 @@ func (m *Manager) deleteUser(ctx context.Context, username string) error {
 
 // createNamespace creates a persistent namespace for the environment
 func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
-	// Use the create-namespace.sh script created by Lima provisioning
-	cmd := fmt.Sprintf("sudo /usr/local/bin/create-namespace.sh %s %s",
-		env.UserName,
-		env.ProjectPath,
-	)
+	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
 
-	_, err := m.sshClient.ExecContext(ctx, cmd)
-	if err != nil {
+	// Create the /envs directory
+	mkdirCmd := fmt.Sprintf("sudo mkdir -p /envs/%s", env.Name)
+	if _, err := m.sshClient.ExecContext(ctx, mkdirCmd); err != nil {
+		return fmt.Errorf("failed to create namespace directory: %w", err)
+	}
+
+	// Build the unshare command with proper namespace setup
+	// This creates mount and PID namespaces, runs a sleep process to keep them alive
+	unshareCmd := fmt.Sprintf(`sudo unshare --mount --pid --fork --propagation private bash -c 'sleep infinity' >/dev/null 2>&1 & echo $! | sudo tee %s >/dev/null`, pidFile)
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Creating namespace: %s\n", unshareCmd)
+
+	// Execute the unshare command
+	if _, err := m.sshClient.ExecContext(ctx, unshareCmd); err != nil {
 		return fmt.Errorf("failed to create namespace: %w", err)
 	}
 
-	// Wait a bit for namespace to be ready
-	time.Sleep(3 * time.Second)
+	// Wait a moment for the namespace to stabilize
+	time.Sleep(500 * time.Millisecond)
 
-	// Verify namespace file exists
-	checkCmd := fmt.Sprintf("test -f %s", env.NamespaceFile)
-	_, err = m.sshClient.ExecContext(ctx, checkCmd)
-	if err != nil {
-		return fmt.Errorf("namespace file not created: %s", env.NamespaceFile)
+	// Verify namespace PID file exists
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Verifying namespace PID file at: %s\n", pidFile)
+
+	// Read the PID file
+	catCmd := fmt.Sprintf("sudo cat %s 2>&1", pidFile)
+	catOutput, catErr := m.sshClient.ExecContext(ctx, catCmd)
+	if catErr != nil {
+		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Failed to read PID file: %v\nOutput: %s\n", catErr, catOutput)
+		return fmt.Errorf("namespace PID file not created: %s (error: %w, output: %s)", pidFile, catErr, catOutput)
 	}
 
+	pid := strings.TrimSpace(catOutput)
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace PID: %s\n", pid)
+
+	// Verify the namespace process is still running
+	checkProcCmd := fmt.Sprintf("sudo kill -0 %s 2>&1", pid)
+	checkOutput, checkErr := m.sshClient.ExecContext(ctx, checkProcCmd)
+	if checkErr != nil {
+		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace process check failed: %v\nOutput: %s\n", checkErr, checkOutput)
+		return fmt.Errorf("namespace process (PID %s) is not running: %w", pid, checkErr)
+	}
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace ready (PID %s is running)\n", pid)
 	return nil
 }
 
@@ -304,10 +316,18 @@ func (m *Manager) GetProjectPath(ctx context.Context, envName string) (string, e
 		return "", err
 	}
 
+	// Read the namespace PID
+	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", envName)
+	pidOutput, err := m.sshClient.ExecContext(ctx, fmt.Sprintf("cat %s", pidFile))
+	if err != nil {
+		return "", fmt.Errorf("failed to read namespace PID: %w", err)
+	}
+	pid := strings.TrimSpace(pidOutput)
+
 	// Try to find the project path from the namespace mounts
 	// This is a heuristic - look for bind mounts in /proc/mounts
-	cmd := fmt.Sprintf("sudo nsenter --mount=/home/%s/namespace.mnt findmnt -n -o TARGET | grep -E '^/Users|^/home' | grep -v '^/home/%s$' | head -n1 || echo ''",
-		envName, envName)
+	cmd := fmt.Sprintf("sudo nsenter --mount=/proc/%s/ns/mnt findmnt -n -o TARGET | grep -E '^/Users|^/home' | grep -v '^/home/%s$' | head -n1 || echo ''",
+		pid, envName)
 
 	output, err := m.sshClient.ExecContext(ctx, cmd)
 	if err != nil {

@@ -176,6 +176,45 @@ func (c *Client) ExecContext(ctx context.Context, cmd string) (string, error) {
 	}
 }
 
+// ExecContextStreaming executes a command with context support and streams output to stderr
+func (c *Client) ExecContextStreaming(ctx context.Context, cmd string) error {
+	if c.client == nil {
+		if err := c.Connect(); err != nil {
+			return err
+		}
+	}
+
+	// Create a session
+	session, err := c.client.NewSession()
+	if err != nil {
+		return fmt.Errorf("failed to create session: %w", err)
+	}
+	defer func() { _ = session.Close() }()
+
+	// Stream output directly to stderr for real-time feedback
+	session.Stdout = os.Stderr
+	session.Stderr = os.Stderr
+
+	// Create channel for command completion
+	done := make(chan error, 1)
+
+	go func() {
+		done <- session.Run(cmd)
+	}()
+
+	// Wait for command or context cancellation
+	select {
+	case <-ctx.Done():
+		_ = session.Signal(ssh.SIGKILL)
+		return ctx.Err()
+	case err := <-done:
+		if err != nil {
+			return fmt.Errorf("command failed: %w", err)
+		}
+		return nil
+	}
+}
+
 // ExecInteractive executes a command interactively with terminal support
 // This is for commands that need user interaction (like shells)
 func (c *Client) ExecInteractive(cmd string) error {

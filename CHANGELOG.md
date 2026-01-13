@@ -11,14 +11,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Colored, structured logging with INFO/SUCCESS/WARNING/ERROR levels
 - Informational messages now output to stderr (allows stdout capture for data)
+- Real-time streaming of Lima VM creation and startup output for better visibility
+- Real-time streaming of namespace creation script output
+- Debug logging for all VM and namespace operations with command execution details
+
+### Changed
+
+- Refactored namespace management to use direct `unshare`/`nsenter` commands instead of embedded shell scripts for better maintainability and debugging
+- Simplified VM provisioning by removing unnecessary script generation, keeping only essential package installation and sudoers configuration
+- Changed namespace PID file location from `/home/<env>/namespace.pid` to `/envs/<env>/namespace.pid` for cleaner organization
 
 ### Fixed
 
 - JSON parsing error when `limactl list --json` returns a single instance object instead of an array
-- Namespace creation failing when namespace file doesn't exist prior to `unshare` command
+- Namespace creation failing - now stores PID and references namespace via /proc/<pid>/ns/mnt
+- Shell command hanging after namespace creation - background process now properly detaches from SSH session
+- Shell running as root instead of environment user - now properly switches to environment user
 - Sudoers configuration using hardcoded 'lima' user instead of actual VM user
 - Error propagation from background namespace process - now properly detects failures
 - Usage/help text printing on every error - now shows only error messages
+- Error reporting for namespace creation failures - now captures and displays actual command output
+- Missing sudo permissions for sandbox.sh, pkill, nsenter, findmnt, mount, mountpoint, and su commands
+- Lack of feedback during namespace verification - added debug logging
+- Permission denied error when verifying namespace PID file - verification commands now use sudo
+- VM provisioning hanging indefinitely - removed non-essential zsh and mise installation that blocked SSH startup
+- Shell failing with "No such file or directory" - changed default shell from zsh to bash
+- Command arguments incorrectly parsed as paths - fixed handling of `--` separator for commands like `llima-box shell -- bash`
+- Interactive shell errors about terminal process group - removed PID namespace entry to avoid terminal control issues
 
 ## [0.3.0]
 

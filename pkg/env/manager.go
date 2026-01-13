@@ -311,16 +311,9 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 // setupNamespaceFilesystem sets up the isolated filesystem view inside a namespace
 func (m *Manager) setupNamespaceFilesystem(ctx context.Context, env *Environment, namespacePID string) error {
 	// Enter the namespace and set up bind mount for the project directory
-	setupCmd := fmt.Sprintf(`sudo nsenter --mount --target=%s bash -c '
-		# Create workspace directory if it doesn't exist
-		mkdir -p /workspace
-
-		# Bind mount the project directory to /workspace
-		mount --bind %s /workspace
-
-		# Set ownership to the environment user
-		chown -R %s:%s /workspace
-	'`, namespacePID, env.ProjectPath, env.Name, env.Name)
+	// Note: Each command needs sudo since nsenter runs bash as the lima user
+	setupCmd := fmt.Sprintf(`sudo nsenter --mount --target=%s -- bash -c 'sudo mkdir -p /workspace && sudo mount --bind %s /workspace && sudo chown -R %s:%s /workspace'`,
+		namespacePID, env.ProjectPath, env.Name, env.Name)
 
 	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Setting up namespace filesystem: %s\n", setupCmd)
 

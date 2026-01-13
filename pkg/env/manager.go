@@ -200,22 +200,22 @@ func (m *Manager) EnterNamespace(ctx context.Context, env *Environment, cmd []st
 	pidFile := fmt.Sprintf("/envs/%s/namespace.pid", env.Name)
 
 	// Build the nsenter command to enter the namespace and run as the environment user
+	// The working directory is /workspace (where the project is bind-mounted)
 	var sshCmd string
 	if len(cmd) == 0 {
-		// Interactive shell - don't use -c, let su start a proper login shell
+		// Interactive shell - start bash in /workspace without login shell
+		// This ensures we start in the project directory, not the home directory
 		sshCmd = fmt.Sprintf(
-			"sudo nsenter --target=$(sudo cat %s) --mount --wdns=%s su --login %s",
+			"sudo nsenter --target=$(sudo cat %s) --mount su %s --command 'cd /workspace && exec bash'",
 			pidFile,
-			env.ProjectPath,
 			env.Name,
 		)
 	} else {
-		// Specific command - use -c to execute it
+		// Specific command - run it in /workspace
 		command := strings.Join(cmd, " ")
 		sshCmd = fmt.Sprintf(
-			"sudo nsenter --target=$(sudo cat %s) --mount --wdns=%s su --login %s --command %q",
+			"sudo nsenter --target=$(sudo cat %s) --mount su %s --command 'cd /workspace && %s'",
 			pidFile,
-			env.ProjectPath,
 			env.Name,
 			command,
 		)
@@ -298,6 +298,39 @@ func (m *Manager) createNamespace(ctx context.Context, env *Environment) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace ready (PID %s is running)\n", pid)
+
+	// Set up filesystem isolation inside the namespace
+	// This bind-mounts only the project directory to /workspace
+	if err := m.setupNamespaceFilesystem(ctx, env, pid); err != nil {
+		return fmt.Errorf("failed to setup namespace filesystem: %w", err)
+	}
+
+	return nil
+}
+
+// setupNamespaceFilesystem sets up the isolated filesystem view inside a namespace
+func (m *Manager) setupNamespaceFilesystem(ctx context.Context, env *Environment, namespacePID string) error {
+	// Enter the namespace and set up bind mount for the project directory
+	setupCmd := fmt.Sprintf(`sudo nsenter --mount --target=%s bash -c '
+		# Create workspace directory if it doesn't exist
+		mkdir -p /workspace
+
+		# Bind mount the project directory to /workspace
+		mount --bind %s /workspace
+
+		# Set ownership to the environment user
+		chown -R %s:%s /workspace
+	'`, namespacePID, env.ProjectPath, env.Name, env.Name)
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Setting up namespace filesystem: %s\n", setupCmd)
+
+	output, err := m.sshClient.ExecContext(ctx, setupCmd)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Filesystem setup failed: %v\nOutput: %s\n", err, output)
+		return fmt.Errorf("failed to setup bind mount: %w", err)
+	}
+
+	fmt.Fprintf(os.Stderr, "\033[90mDEBUG\033[0m: Namespace filesystem isolation ready\n")
 	return nil
 }
 
